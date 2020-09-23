@@ -1,0 +1,25 @@
+<?php
+//bof
+    return array('table' => 'toto',
+                'fields' => array('wwtable' => array('type' => 'VARCHAR',
+                                                'nullable' => false,
+                                                'primary' => false),
+                                'wwfield' => array('type' => 'VARCHAR',
+                                                'nullable' => false,
+                                                'primary' => false),
+                                'wwnullable' => array('type' => 'BIT',
+                                                        'nullable' => false,
+                                                        'primary' => false),
+                                'wwtype' => array('type' => 'VARCHAR',
+                                                        'nullable' => false,
+                                                        'primary' => false),
+                                'wwlength' => array('type' => 'INT',
+                                                        'nullable' => false,
+                                                        'primary' => false),
+                                'wwtype' => array('type' => 'BIT',
+                                                        'nullable' => false,
+                                                        'primary' => false),
+                                'wwtype' => array('type' => 'BIT',
+                                                        'nullable' => false,
+                                                        'primary' => false)
+                                                ));

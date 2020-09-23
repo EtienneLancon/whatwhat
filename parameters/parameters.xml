@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<root>
+    <env>
+        <name>dev</name>
+        <connection>
+            <user>dbUser</user>
+            <pwd>D-qu'on_è+24</pwd>
+            <host>192.192.1.138\MSSQLDEV</host>
+            <port>1433</port>
+            <type>sqlsrv</type>
+        </connection>
+    </env>    
+</root>
