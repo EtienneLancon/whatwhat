@@ -1,7 +1,7 @@
 <?php
    // use whatwhat\database\Select;
    use whatwhat\file\File;
-   use whatwhat\database\Request;
+   use whatwhat\database\Migration;
    require("bootstrap/require.php");
    // $req = new Select();
    // var_dump($req->getAll('livre', array('titre' => 'zdfadvadv')));
@@ -9,7 +9,7 @@
    // var_dump($req->getResults());
    // $s = new Migration('eni');
    // $s->collect();
-
-   $req = new Request('Syface');
-   var_dump($req->getAll('FOURNISSEUR'));
+   $req = new Migration('test');
+   //$req->collect();
+   $req->makeMigration('wwmigrations/test2020-24-9_17-07-25.mig');
 

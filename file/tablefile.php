@@ -2,7 +2,7 @@
     namespace whatwhat\file;
 
     class TableFile extends File{
-        static public $tablesDirectory = 'tables';
+        static public $tablesDirectory = 'wwtables';
 
         public function get(){
             $this->checkFile();
@@ -24,7 +24,7 @@
             if(is_file($this->path)){
                 echo '<br/>File '.$this->path.' already exists. Ignoring. Use update() method to update your models from database.';
             }else{
-                $content = "<?php\n\treturn array('database' => '".$database."'\n\t\t'table' => '".$table."',\n\t\t'fields' => array(";
+                $content = "<?php\n\treturn array('database' => '".$database."',\n\t\t'table' => '".$table."',\n\t\t'fields' => array(";
                 foreach($fields as $name => $desc){
                     $content .= "\n\t\t\t'".$name."' => array (\n\t\t\t\t'type' => '".$desc['type']."'";
                     $content .= ",\n\t\t\t\t'nullable' => ".(($desc['nullable']) ? "true" : "false");

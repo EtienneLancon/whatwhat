@@ -4,18 +4,18 @@
 
     class Migration extends Request{
         private $current;
-        static private $migrationDirectory = 'migrations';
+        static private $migrationDirectory = 'wwmigrations';
 
         public function migrate(){
-            if(is_dir(TableFile::$tablesDirectory)){
+            if(is_dir(TableFile::$tablesDirectory) || mkdir(TableFile::$tablesDirectory)){
                 $tables = wwscandir(TableFile::$tablesDirectory);
                 foreach($tables as $table){
                     $this->current = $table;
-                    $f = new TableFile(self::$tablesDirectory.'/'.$table);
+                    $f = new TableFile(TableFile::$tablesDirectory.'/'.$table);
                     $model = $f->get();
                     if(!empty($model)) $this->sqlCreateTable($model);
                 }
-                $this->makeMigration();
+                $this->writeMigration();
             }else throw new \Exception("Can't find ".TableFile::$tablesDirectory." directory.");
         }
 
@@ -41,10 +41,10 @@
         }
 
         private function writeMigration(){
-            if(is_dir(self::$migrationDirectory)){
+            if(is_dir(self::$migrationDirectory) || mkdir(self::$migrationDirectory)){
                 $migFile = new TableFile(self::$migrationDirectory.'/'.$this->current);
-                $date = date('Y-d-n::H:i:s');
-                $migFile->rename(self::$migrationDirectory.'/'.$this->request->getdbName().$date.'.mig');
+                $date = date('Y-d-n_H-i-s');
+                $migFile->rename(self::$migrationDirectory.'/'.$this->getdbName().$date.'.mig');
                 $migFile->write($this->cmd);
             }else throw new \Exception("Can't find ".self::$migrationDirectory." directory.");
         }
@@ -83,6 +83,7 @@
             foreach($columnList as $column){
                 if($previousTable != $column->wwtable){
                     if(!is_null($previousTable)){
+                        is_dir(TableFile::$tablesDirectory) or mkdir(TableFile::$tablesDirectory);
                         $f = new TableFile(TableFile::$tablesDirectory.'/'.$previousTable.'.php');
                         $f->writeModel($this->getdbName(), $previousTable, $fields);
                     }
