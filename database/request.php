@@ -8,15 +8,14 @@
         protected $bindCount;
         protected $binds;
 
-        public function __construct($dbName, $cmd = null){
-            $this->cmd = $cmd;
+        public function __construct($dbName){
             $this->bindCount = 0;
             $this->binds = array();
             $this->db = new Connection($dbName);
         }
 
         public function getdbType(){
-            return $this->db->getType();
+            return $this->db->getdbType();
         }
 
         public function getdbName(){
@@ -30,6 +29,7 @@
         protected function bindexec(){
             if(!empty($this->binds)){
                 foreach($this->binds as $param => $value){
+                    if(strpos($param, '__table') === 0) throw new \Exception('A table binding must be done before statement is setted');
                     if(is_bool($value)){
                         $this->stmt->bindValue(':'.$param, $value, \PDO::PARAM_BOOL);
                     }elseif(is_numeric($value) && is_integer($value)){
@@ -44,6 +44,12 @@
         }
         
         protected function setStmt(){
+            foreach(array_keys($this->binds) as &$key){
+                if(strpos($key, '__table') === 0){
+                    $this->cmd = str_replace($key, $this->binds[$key], $this->cmd);
+                    unset($this->binds[$key]);
+                }
+            }
             $this->stmt = $this->db->getRessource()->prepare($this->cmd);
         }
 

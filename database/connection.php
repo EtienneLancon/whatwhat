@@ -4,19 +4,15 @@
 
     class Connection{
         private $dbname;
-        private $user;
-        private $pwd;
-        private $host;
-        private $port;
         private $alias;
         private $ressource;
-        private $type;
+        private $dbtype;
         private static $known = array();
 
         public function __construct($dbName){
             paramcheck($dbName, 'string');
             $this->dbname = $dbName;
-            $this->set($dbName);
+            $this->set();
         }
 
         private function set(){
@@ -30,28 +26,41 @@
                                 'pwd' => 'root/env/connection/pwd',
                                 'host' => 'root/env/connection/host',
                                 'port' => 'root/env/connection/port',
-                                'type' => 'root/env/connection/type');
+                                'dbtype' => 'root/env/connection/type');
 
                 $file->__set($context, 'context');
 
                 $dbParam = $file->getData();
 
-                $pdostring = ConnectionType::getPdoString($dbParam['type']);
+                $this->dbtype = $this->switchConnectionHandler($dbParam['dbtype']);
 
-                foreach($dbParam as $target => $value){
-                    $this->__set($value, $target);
-                }
-                echo "toto";
+                $pdostring = $this->dbtype->getPdoString();
 
-                $pdostring = str_replace("#host#", $this->host, $pdostring);
-                $pdostring = str_replace("#port#", $this->port, $pdostring);
+                $pdostring = str_replace("#host#", $dbParam['host'], $pdostring);
+                $pdostring = str_replace("#port#", $dbParam['port'], $pdostring);
                 $pdostring = str_replace("#dbname#", $this->dbname, $pdostring);
 
                 $pdo_options[\PDO::ATTR_ERRMODE] = \PDO::ERRMODE_EXCEPTION;
-                $this->ressource = new \PDO($pdostring, $this->user, $this->pwd, $pdo_options);
-                self::$known[$this->dbname] = $this->ressource;
+                $this->ressource = new \PDO($pdostring, $dbParam['user'], 
+                                        (isset($dbParam['pwd'])) ? $dbParam['pwd'] : '', $pdo_options);
+                self::$known[$this->dbname] = array('ressource' => $this->ressource,
+                                                    'dbtype' => $this->dbtype);
                 
-            }else $this->ressource = self::$known[$this->dbname];
+            }else{
+                $this->ressource = self::$known[$this->dbname]['ressource'];
+                $this->dbtype = self::$known[$this->dbname]['dbtype'];
+            }
+        }
+
+        private function switchConnectionHandler($dbtype){
+            switch($dbtype){
+                case 'mysql':
+                    require_once('whatwhat/database/handlers/mysqlhandler.php');
+                    return new MysqlHandler();
+                case 'sqlsrv':
+                default:
+                    throw new \Exception('Unknown database type.');
+            }
         }
 
         public function __set($value, $target){
@@ -62,8 +71,8 @@
             return $this->ressource;
         }
 
-        public function getType(){
-            return $this->type;
+        public function getdbType(){
+            return $this->dbtype;
         }
 
         public function getDbName(){

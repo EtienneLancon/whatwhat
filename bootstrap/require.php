@@ -11,6 +11,6 @@
     require('whatwhat/parsing/parsedfile.php');
     require('whatwhat/parsing/parsedxml.php');
     require('whatwhat/database/connection.php');
-    require('whatwhat/database/connectiontype.php');
+    require('whatwhat/database/connectionhandler.php');
     require('whatwhat/database/request.php');
     require('whatwhat/database/migration.php');
