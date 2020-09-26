@@ -1,80 +1,95 @@
 <?php
     namespace whatwhat\database;
-    use whatwhat\file\TableFile;
+    use whatwhat\file\StructureFile;
+    use whatwhat\file\Directory;
 
-    class Migration extends Request{
-        private $current;
+    class Migration{
         static private $migrationDirectory = 'wwmigrations';
+        private $dbname;
 
-        public function migrate(){
-            if(is_dir(TableFile::$tablesDirectory) || mkdir(TableFile::$tablesDirectory)){
-                $tables = wwscandir(TableFile::$tablesDirectory);
-                foreach($tables as $table){
-                    $this->current = $table;
-                    $f = new TableFile(TableFile::$tablesDirectory.'/'.$table);
-                    $model = $f->get();
-                    if(!empty($model)) $this->sqlCreateTable($model);
-                }
-                $this->writeMigration();
-            }else throw new \Exception("Can't find ".TableFile::$tablesDirectory." directory.");
+        public function __construct($dbname){
+            $this->dbname = $dbname;
         }
 
-        private function sqlCreateTable($model){
-            $pk = null;
-            $this->cmd .= "CREATE TABLE ".$model['table']." (\n\t";
-            foreach($model['fields'] as $field => $desc){
-                $this->cmd .= $field." ".$desc['type'];
-                if(array_key_exists('length', $desc)){
-                    $this->cmd .= " (".$desc['length'].")";
-                }
-                if($desc['nullable'] === false) $this->cmd .= " NOT NULL";
-                if($desc['autoincrement'] === true) $this->cmd .= " AUTO_INCREMENT";
-                $this->cmd .= ", \n\t";
-                if($desc['primary']){
-                    $pk = $field;
-                }
+        public function migrate(){
+            $cmd = '';
+            $tables = Directory::scandir(StructureFile::$tablesDirectory);
+            foreach($tables as $table){
+                $f = new StructureFile(StructureFile::$tablesDirectory.'/'.$table);
+                $model = $f->get();
+                if($model !== false) $cmd .= $this->makeSql($model, 'table');
             }
-            if(!empty($pk)){
-                $this->cmd .= "PRIMARY KEY (".$pk.")";
-            }else $this->cmd = substr($this->cmd, 0, strlen($this->cmd)-4);
-            $this->cmd .= ");\n\n";
+
+            $views = Directory::scandir(StructureFile::$viewsDirectory);
+            foreach($views as $view){
+                $f = new StructureFile(StructureFile::$viewsDirectory.'/'.$view);
+                $model = $f->get();
+                if($model !== false) $cmd .= $this->makeSql($model, 'view');
+            }
+            $this->makeMigration();
+        }
+
+        private function makeSql($model, $type){
+            $cmd = '';
+            if($type == 'table'){
+                $pk = null;
+                $cmd .= "CREATE TABLE ".$model['table']." (\n\t";
+                foreach($model['fields'] as $field => $desc){
+                    $cmd .= $field." ".$desc['type'];
+                    if(array_key_exists('length', $desc)){
+                        $cmd .= " (".$desc['length'].")";
+                    }
+                    if($desc['nullable'] === false) $cmd .= " NOT NULL";
+                    if($desc['autoincrement'] === true) $cmd .= " AUTO_INCREMENT";
+                    $cmd .= ", \n\t";
+                    if($desc['primary']){
+                        $pk = $field;
+                    }
+                }
+                if(!empty($pk)){
+                    $cmd .= "PRIMARY KEY (".$pk.")";
+                }else $cmd = substr($cmd, 0, strlen($cmd)-4);
+                $cmd .= ");\n\n";
+            }elseif($type == 'view'){
+                $cmd .= "CREATE OR REPLACE VIEW ".$this->getdbName().".".$model['view']
+                            ." AS\n".$model['definition'].";\n\n";
+            }else{
+                throw new \Exception('Bound unknown object type');
+            }
+            return $cmd;
         }
 
         private function writeMigration(){
-            if(is_dir(self::$migrationDirectory) || mkdir(self::$migrationDirectory)){
-                $migFile = new TableFile(self::$migrationDirectory.'/'.$this->current);
-                $date = date('Y-d-n_H-i-s');
-                $migFile->rename(self::$migrationDirectory.'/'.$this->getdbName().$date.'.mig');
-                $migFile->write($this->cmd);
-            }else throw new \Exception("Can't find ".self::$migrationDirectory." directory.");
+            Directory::isdir(self::$migrationDirectory);
+            $migFile = new StructureFile(self::$migrationDirectory.'/'.$this->getdbName().date('Y-d-n_H-i-s').'.mig');
+            $migFile->write($this->cmd);
         }
 
-        public function makeMigration($file = false){
-            if($file !== false){
-                $this->cmd = file_get_contents($file);
-            }
-            $this->setCmd($this->cmd);
+        public function fileMigration($file){
+            $cmd = file_get_contents($file);
+            $this->setCmd($cmd);
+            $this->getResults();
+        }
+
+        public function cmdMigration($cmd){
+            $this->setCmd($cmd);
             $this->getResults();
         }
 
         public function collect(){
-            switch($this->getdbType()){
-                case 'mysql':
-                    $this->cmd = "SELECT TABLE_NAME as wwtable, COLUMN_NAME as wwfield,
-                                    CASE WHEN IS_NULLABLE = 'YES' THEN 1 ELSE 0 END as wwnullable, DATA_TYPE as wwtype,
-                                    CHARACTER_MAXIMUM_LENGTH as wwlength,
-                                    CASE WHEN COLUMN_KEY = 'PRI' THEN 1 ELSE 0 END as wwprimary,
-                                    CASE WHEN EXTRA = 'auto_increment' THEN 1 ELSE 0 END as wwautoincrement,
-                                    COLUMN_DEFAULT as wwdefault
-                                    FROM INFORMATION_SCHEMA.COLUMNS
-                                    where TABLE_SCHEMA = :dbName";
-                    break;
-            }
-            $this->setCmd($this->cmd);
-            $this->binds = array('dbName' => $this->getdbName());
-            $columnList = $this->getResults();
+            $request = new Request($this->dbname);
+            $request->setCmd(ConnectionType::getTableRequest($request->getdbType()));
+            $request->addBinds(array('dbName' => $this->dbname));
+            $columnList = $request->getResults();
+            if(empty($columnList)) echo "<br/><b>No columns found.</b>";
 
             $this->createModels($columnList);
+
+            $request->setCmd(ConnectionType::getViewRequest($request->getdbType()));
+            $viewList = $request->getResults();
+            if(empty($viewList)) echo "<br/><b>No views found.</b>";
+
+            $this->createViews($viewList);
         }
 
         private function createModels($columnList){
@@ -83,9 +98,9 @@
             foreach($columnList as $column){
                 if($previousTable != $column->wwtable){
                     if(!is_null($previousTable)){
-                        is_dir(TableFile::$tablesDirectory) or mkdir(TableFile::$tablesDirectory);
-                        $f = new TableFile(TableFile::$tablesDirectory.'/'.$previousTable.'.php');
-                        $f->writeModel($this->getdbName(), $previousTable, $fields);
+                        Directory::isdir(StructureFile::$tablesDirectory);
+                        $f = new StructureFile(StructureFile::$tablesDirectory.'/'.$previousTable.'.php');
+                        $f->writeModel($this->dbname, $previousTable, $fields);
                     }
                     $fields = array();
                     $previousTable = $column->wwtable;
@@ -97,7 +112,23 @@
                 $fields[$column->wwfield]['autoincrement'] = $column->wwautoincrement;
                 $fields[$column->wwfield]['default'] = wwnull($column->wwdefault);
             }
-            $f = new TableFile(TableFile::$tablesDirectory.'/'.$previousTable.'.php');
-            $f->writeModel($this->getdbName(), $previousTable, $fields);
+            $f = new StructureFile(StructureFile::$tablesDirectory.'/'.$previousTable.'.php');
+            $f->writeModel($this->dbname, $previousTable, $fields);
+        }
+
+        public function createViews($viewList){
+            foreach($viewList as $view){
+                Directory::isdir(StructureFile::$viewsDirectory);
+                $f = new StructureFile(StructureFile::$viewsDirectory.'/'.$view->wwview.'.php');
+                $f->writeView($this->dbname, $view->wwview, $view->wwdefinition);
+            }
+        }
+
+        public static function setMigrationDirectory($dir){
+            self::$migrationDirectory = $dir;
+        }
+
+        private function tableExists($table){
+
         }
     }

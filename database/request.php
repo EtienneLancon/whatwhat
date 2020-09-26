@@ -41,7 +41,6 @@
             }
             $this->stmt->execute();
             $this->bindCount = 0;
-            $this->binds = array();
         }
         
         protected function setStmt(){
