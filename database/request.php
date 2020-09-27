@@ -8,10 +8,11 @@
         protected $bindCount;
         protected $binds;
 
-        public function __construct($dbName){
+        public function __construct($dbname){
+            paramcheck($dbname, 'string');
             $this->bindCount = 0;
             $this->binds = array();
-            $this->db = new Connection($dbName);
+            $this->db = new Connection($dbname);
         }
 
         public function getdbType(){
@@ -95,5 +96,4 @@
         public function setBindCount($nb){
             $this->bindCount = $nb;
         }
-
     }

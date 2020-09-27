@@ -9,4 +9,4 @@
 
 
    $ww = new Migration('eni');
-   $ww->collect();
+   $ww->migrate();

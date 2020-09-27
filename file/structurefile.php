@@ -21,7 +21,7 @@
             else return false;
         }
 
-        public function writeModel($database, $table, $fields){
+        public function writeModel($database, $table, $fields, $indexes){
             if(is_file($this->path)){
                 echo '<br/>File '.$this->path.' already exists. Ignoring. Use update() method to update your models from database.';
             }else{
@@ -37,7 +37,22 @@
                     }
                     $content .= "),";
                 }
-                $content = substr($content, 0, strlen($content) - 2).")));";
+                $content = substr($content, 0, strlen($content) - 1).")";
+
+                if(!empty($indexes)){
+                    $previousIndex = null;
+                    $content .= ",\n\t\t'indexes' => array(";
+                    foreach($indexes as $index){
+                        if($index['wwindex'] != $previousIndex){
+                            if(!is_null($previousIndex)) $content = substr($content, 0, strlen($content) - 2)."),";
+                            $content .= "\n\t\t\t'".$index['wwindex']."' => array(";
+                            $previousIndex = $index['wwindex'];
+                        }
+                        $content .= "\n\t\t\t\t'".$index['wwcolumn']."', ";
+                    }
+                    $content = substr($content, 0, strlen($content) - 2)."))";
+                }
+                $content .= ");";
                 $this->write($content);
             }
         }

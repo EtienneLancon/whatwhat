@@ -8,6 +8,7 @@
         private $dbname;
 
         public function __construct($dbname){
+            paramcheck($dbname, 'string');
             $this->dbname = $dbname;
         }
 
@@ -32,7 +33,7 @@
         private function makeSql($model, $type){
             $cmd = '';
             if($type == 'table'){
-                if(!$this->tableExists($model['table'])){
+               // if(!$this->tableExists($model['table'])){
                     $pk = null;
                     $cmd = "CREATE TABLE ".$model['table']." (\n\t";
                     foreach($model['fields'] as $field => $desc){
@@ -53,7 +54,18 @@
                         $cmd .= "PRIMARY KEY (".$pk.")";
                     }else $cmd = substr($cmd, 0, strlen($cmd)-4);
                     $cmd .= ");\n\n";
-                }
+                    if(isset($model['indexes'])){
+                        foreach($model['indexes'] as $index => $columns){
+                            $cmd .= "CREATE INDEX ".$index."\nON ".$model['table']." (";
+                            $i = 0;
+                            foreach($columns as $column){
+                                $cmd .= ($i == 0) ? $column : ', '.$column;
+                                $i++;
+                            }
+                            $cmd .= ");\n\n";
+                        }
+                    }
+              //  }
             }elseif($type == 'view'){
                 $cmd = "CREATE OR REPLACE VIEW ".$this->dbname.".".$model['view']
                             ." AS\n".$model['definition'].";\n\n";
@@ -105,7 +117,7 @@
                     if(!is_null($previousTable)){
                         $indexes = $this->getIndexes($previousTable);
                         $f = new StructureFile(StructureFile::$tablesDirectory.'/'.$previousTable.'.php');
-                        $f->writeModel($this->dbname, $previousTable, $fields);
+                        $f->writeModel($this->dbname, $previousTable, $fields, $indexes);
                     }
                     $fields = array();
                     $previousTable = $column->wwtable;
@@ -120,7 +132,7 @@
 
             $indexes = $this->getIndexes($previousTable);
             $f = new StructureFile(StructureFile::$tablesDirectory.'/'.$previousTable.'.php');
-            $f->writeModel($this->dbname, $previousTable, $fields);
+            $f->writeModel($this->dbname, $previousTable, $fields, $indexes);
         }
 
         public function createViews($viewList){

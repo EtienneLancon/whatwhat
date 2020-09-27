@@ -10,7 +10,6 @@
         private static $known = array();
 
         public function __construct($dbName){
-            paramcheck($dbName, 'string');
             $this->dbname = $dbName;
             $this->set();
         }
@@ -58,6 +57,8 @@
                     require_once('whatwhat/database/handlers/mysqlhandler.php');
                     return new MysqlHandler();
                 case 'sqlsrv':
+                    require_once('whatwhat/database/handlers/sqlsrvhandler.php');
+                    return new SqlsrvHandler();
                 default:
                     throw new \Exception('Unknown database type.');
             }
