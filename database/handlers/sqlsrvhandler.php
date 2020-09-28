@@ -8,7 +8,7 @@
             return "sqlsrv:server=#host#,#port#;database=#dbname#";
         }
 
-        static public function getTableRequest(){
+        static public function getTableListRequest(){
             return "SELECT TABLE_NAME as wwtable, S.name as wwfield,
                     S.is_nullable as wwnullable, TY.name as wwtype,
                     S.max_length / 2 as wwlength,
@@ -22,7 +22,20 @@
 					and TABLE_CATALOG = :dbName";
         }
 
-        static public function getViewRequest(){
+        static public function getTableRequest(){
+            return "SELECT TABLE_NAME as wwtable, S.name as wwfield,
+                    S.is_nullable as wwnullable, TY.name as wwtype,
+                    S.max_length / 2 as wwlength,
+                    is_identity as wwprimary,
+                    is_identity as wwautoincrement
+                    FROM INFORMATION_SCHEMA.TABLES T 
+                    left join sys.columns S on S.object_id = OBJECT_ID(T.TABLE_NAME)
+                    left join sys.types TY on S.user_type_id = TY .user_type_id
+                    where T.TABLE_NAME = :table
+                    and TABLE_CATALOG = :dbName";
+        }
+
+        static public function getViewListRequest(){
             return "SELECT TABLE_NAME as wwview,
                     SUBSTRING(VIEW_DEFINITION, CHARINDEX('SELECT', VIEW_DEFINITION), LEN(VIEW_DEFINITION) - CHARINDEX('SELECT', VIEW_DEFINITION)) as wwdefinition
                     FROM INFORMATION_SCHEMA.VIEWS

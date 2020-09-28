@@ -22,49 +22,42 @@
         }
 
         public function writeModel($database, $table, $fields, $indexes){
-            if(is_file($this->path)){
-                echo '<br/>File '.$this->path.' already exists. Ignoring. Use update() method to update your models from database.';
-            }else{
-                $content = "<?php\n\treturn array('database' => '".$database."',\n\t\t'table' => '".$table."',\n\t\t'fields' => array(";
-                foreach($fields as $name => $desc){
-                    $content .= "\n\t\t\t'".$name."' => array (\n\t\t\t\t'type' => '".$desc['type']."'";
-                    $content .= ",\n\t\t\t\t'nullable' => ".(($desc['nullable']) ? "true" : "false");
-                    if(strpos($desc['type'], 'int') !== false) $content .= ",\n\t\t\t\t'primary' => ".(($desc['primary']) ? "true" : "false");
-                    if(strpos($desc['type'], 'int') !== false) $content .= ",\n\t\t\t\t'autoincrement' => ".(($desc['autoincrement']) ? "true" : "false");
-                    if(!is_null($desc['length']))$content .= ",\n\t\t\t\t'length' => ".$desc['length'];
-                    if(!is_null($desc['default'])){
-                        $content .= ",\n\t\t\t\t'default' => ".((strpos($desc['type'], 'int') !== false) ? "'".$desc['default']."'" : $desc['default']);
-                    }
-                    $content .= "),";
+            $content = "<?php\n\treturn array('database' => '".$database."',\n\t\t'table' => '".$table."',\n\t\t'fields' => array(";
+            foreach($fields as $name => $desc){
+                $content .= "\n\t\t\t'".$name."' => array (\n\t\t\t\t'type' => '".$desc['type']."'";
+                $content .= ",\n\t\t\t\t'nullable' => ".(($desc['nullable']) ? "true" : "false");
+                if(strpos($desc['type'], 'int') !== false) $content .= ",\n\t\t\t\t'primary' => ".(($desc['primary']) ? "true" : "false");
+                if(strpos($desc['type'], 'int') !== false) $content .= ",\n\t\t\t\t'autoincrement' => ".(($desc['autoincrement']) ? "true" : "false");
+                if(!is_null($desc['length']))$content .= ",\n\t\t\t\t'length' => ".$desc['length'];
+                if(!is_null($desc['default'])){
+                    $content .= ",\n\t\t\t\t'default' => ".((strpos($desc['type'], 'int') !== false) ? "'".$desc['default']."'" : $desc['default']);
                 }
-                $content = substr($content, 0, strlen($content) - 1).")";
-
-                if(!empty($indexes)){
-                    $previousIndex = null;
-                    $content .= ",\n\t\t'indexes' => array(";
-                    foreach($indexes as $index){
-                        if($index['wwindex'] != $previousIndex){
-                            if(!is_null($previousIndex)) $content = substr($content, 0, strlen($content) - 2)."),";
-                            $content .= "\n\t\t\t'".$index['wwindex']."' => array(";
-                            $previousIndex = $index['wwindex'];
-                        }
-                        $content .= "\n\t\t\t\t'".$index['wwcolumn']."', ";
-                    }
-                    $content = substr($content, 0, strlen($content) - 2)."))";
-                }
-                $content .= ");";
-                $this->write($content);
+                $content .= "),";
             }
+            $content = substr($content, 0, strlen($content) - 1).")";
+
+            if(!empty($indexes)){
+                $previousIndex = null;
+                $content .= ",\n\t\t'indexes' => array(";
+                foreach($indexes as $index){
+                    if($index['wwindex'] != $previousIndex){
+                        if(!is_null($previousIndex)) $content = substr($content, 0, strlen($content) - 2)."),";
+                        $content .= "\n\t\t\t'".$index['wwindex']."' => array(";
+                        $previousIndex = $index['wwindex'];
+                    }
+                    $content .= "\n\t\t\t\t'".$index['wwcolumn']."', ";
+                }
+                $content = substr($content, 0, strlen($content) - 2)."))";
+            }
+            $content .= ");";
+            $this->write($content);
         }
 
         public function writeView($database, $view, $definition){
-            if(is_file($this->path)){
-                echo '<br/>File '.$this->path.' already exists. Ignoring. Use update() method to update your models from database.';
-            }else{
-                $content = "<?php\n\treturn array('database' => '"
-                            .$database."',\n\t\t'view' => '".$view."',\n\t\t'definition' => '".$definition."');";
-                $this->write($content);
-            }
+            $content = "<?php\n\treturn array('database' => '"
+                        .$database."',\n\t\t'view' => '".$view."',\n\t\t'definition' => '"
+                                                        .str_replace("'", "\'", $definition)."');";
+            $this->write($content);
         }
 
         public static function setTablesDirectory($dir){

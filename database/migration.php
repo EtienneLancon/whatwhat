@@ -27,13 +27,16 @@
                 $model = $f->get();
                 if($model !== false) $cmd .= $this->makeSql($model, 'view');
             }
-            $this->cmdMigration($cmd);
+            $this->writeMigration($cmd);
         }
 
         private function makeSql($model, $type){
             if($type == 'table'){
                 if(!$this->tableExists($model['table'])){
                     return SqlGenerator::createTable($model);
+                }else{
+                    $existingTable = $this->getColumnList($model['table']);
+                    return SqlGenerator::alterTable($model, $existingTable);
                 }
             }elseif($type == 'view'){
                 return SqlGenerator::createView($model);
@@ -61,19 +64,9 @@
         }
 
         public function collect(){
-            $request = new Request($this->dbname);
-            $request->setCmd($request->getdbType()->getTableRequest());
-            $request->addBinds(array('dbName' => $this->dbname));
-            $columnList = $request->getResults();
-            if(empty($columnList)) echo "<br/><b>No columns found.</b>";
+            $this->createModels($this->getColumnList());
 
-            $this->createModels($columnList);
-
-            $request->setCmd($request->getdbType()->getViewRequest());
-            $viewList = $request->getResults();
-            if(empty($viewList)) echo "<br/><b>No views found.</b>";
-
-            $this->createViews($viewList);
+            $this->createViews($this->getViewList());
         }
 
         private function createModels($columnList){
@@ -124,9 +117,9 @@
             $request->setCmd($request->getdbType()->getIndexRequest());
             $request->addBinds(array($request->getdbType()->getIndexRequestBindName() => $table));
             $indexes = $request->getResults();
-            var_dump($table);
-            var_dump($request->getdbType()->getIndexRequestBindName());
-            var_dump($indexes);
+            // var_dump($table);
+            // var_dump($request->getdbType()->getIndexRequestBindName());
+            // var_dump($indexes);
 
             return $this->filterIndex($request->getdbType()->getIndexFilter(), $indexes);
         }
@@ -141,6 +134,28 @@
                 $i++;
             }
             return $temp;
+        }
+
+        private function getColumnList($table = null){
+            $request = new Request($this->dbname);
+            if(!is_null($table)){
+                $request->setCmd($request->getdbType()->getTableRequest());
+                $request->addBinds(array('dbName' => $this->dbname, 'table' => $table));
+            }else{
+                $request->setCmd($request->getdbType()->getTableListRequest());
+                $request->addBinds(array('dbName' => $this->dbname));
+            }
+            $columnList = $request->getResults();
+            if(empty($columnList)) echo "<br/><b>No columns found.</b>";
+            return $columnList;
+        }
+
+        private function getViewList(){
+            $request = new Request($this->dbname);
+            $request->setCmd($request->getdbType()->getViewListRequest());
+            $viewList = $request->getResults();
+            if(empty($viewList)) echo "<br/><b>No views found.</b>";
+            return $viewList;
         }
 
         public static function setMigrationDirectory($dir){

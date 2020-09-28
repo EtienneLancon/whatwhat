@@ -5,9 +5,11 @@
 
         static public function getPdoString();
 
+        static public function getTableListRequest();
+
         static public function getTableRequest();
 
-        static public function getViewRequest();
+        static public function getViewListRequest();
 
         static public function getIndexRequest();
 

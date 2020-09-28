@@ -38,8 +38,31 @@
             return $cmd;
         }
 
+        static public function alterTable($model, $existingTable){
+            foreach($existingTable as $existingColumn){
+                if($existingColumn->wwtable == $model['table']){
+                    if(array_key_exists($existingColumn->wwfield, $model['fields'])){ //in new and old tables.
+                        echo $existingColumn->wwfield." ca existe\n";
+                    }else{                                                          //only in old table.
+                        echo $existingColumn->wwfield." ca existe pas\n";
+                    }
+                    foreach($model['fields'] as $fieldname => &$fielddata){
+                        if($fieldname == $existingColumn->wwfield){
+                            $fielddata['inExisting'] = true;
+                        }
+                    }
+                }else throw new \Exception("<br/>Error during treatment : new and existing table mismatch. "
+                                                .$existingColumn->wwtable." --- ".$model['table']);
+            }
+            foreach($model['fields'] as $fieldname => $field){
+                if(!array_key_exists('inExisting', $field)){     //only in new table.
+                    echo $fieldname." n'est pas dans l'existant.\n";
+                }
+            }
+        }
+
         static public function createView($model){
             return "CREATE OR REPLACE VIEW ".$model['view']
-            ." AS\n".str_replace("'", "\'", $model['definition']).";\n\n";
+            ." AS\n".str_replace("\'", "'", $model['definition']).";\n\n";
         }
     }

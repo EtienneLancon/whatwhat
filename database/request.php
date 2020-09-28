@@ -95,4 +95,8 @@
         public function setCmd($cmd){
             $this->cmd = $cmd;
         }
+
+        public function moreCmd($addedCmd){
+            $this->cmd .= $addedCmd;
+        }
     }
