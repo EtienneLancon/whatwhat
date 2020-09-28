@@ -3,11 +3,11 @@
     <env>
         <name>dev</name>
         <connection>
-            <user>dbAdmin</user>
-            <pwd>PTCkrO$#E+"a'R&lt;4a3;T</pwd>
-            <host>WEB\MSSQLDEV</host>
-            <port>1433</port>
-            <type>sqlsrv</type>
+            <user>root</user>
+            <pwd></pwd>
+            <host>localhost</host>
+            <port>3306</port>
+            <type>mysql</type>
         </connection>
     </env>    
 </root>
