@@ -48,6 +48,12 @@
                         'wwcolumn' => 'wwcolumn');
         }
 
+        static public function getTableExistsRequest(){
+            return "select *
+                    from INFORMATION_SCHEMA.TABLES t
+                    where t.TABLE_NAME  = :table";
+        }
+
         static public function getDefaultPort(){
             return self::defaultPort;
         }

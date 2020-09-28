@@ -8,5 +8,5 @@
 
 
 
-   $ww = new Migration('Syface');
-   $ww->collect();
+   $ww = new Migration('eni');
+   $ww->migrate();

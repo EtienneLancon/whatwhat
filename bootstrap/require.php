@@ -14,3 +14,4 @@
     require('whatwhat/database/connectionhandler.php');
     require('whatwhat/database/request.php');
     require('whatwhat/database/migration.php');
+    require('whatwhat/database/sqlgenerator.php');

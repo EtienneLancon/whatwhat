@@ -27,52 +27,19 @@
                 $model = $f->get();
                 if($model !== false) $cmd .= $this->makeSql($model, 'view');
             }
-            $this->writeMigration($cmd);
+            $this->cmdMigration($cmd);
         }
 
         private function makeSql($model, $type){
-            $cmd = '';
             if($type == 'table'){
-               // if(!$this->tableExists($model['table'])){
-                    $pk = null;
-                    $cmd = "CREATE TABLE ".$model['table']." (\n\t";
-                    foreach($model['fields'] as $field => $desc){
-                        $cmd .= $field." ".$desc['type'];
-                        if(array_key_exists('length', $desc)){
-                            $cmd .= " (".$desc['length'].")";
-                        }
-                        if($desc['nullable'] === false) $cmd .= " NOT NULL";
-                        if(array_key_exists('autoincrement', $desc) && $desc['autoincrement'] === true){
-                            $cmd .= " AUTO_INCREMENT";
-                        }
-                        $cmd .= ", \n\t";
-                        if(array_key_exists('primary', $desc) && $desc['primary'] === true){
-                            $pk = $field;
-                        }
-                    }
-                    if(!empty($pk)){
-                        $cmd .= "PRIMARY KEY (".$pk.")";
-                    }else $cmd = substr($cmd, 0, strlen($cmd)-4);
-                    $cmd .= ");\n\n";
-                    if(isset($model['indexes'])){
-                        foreach($model['indexes'] as $index => $columns){
-                            $cmd .= "CREATE INDEX ".$index."\nON ".$model['table']." (";
-                            $i = 0;
-                            foreach($columns as $column){
-                                $cmd .= ($i == 0) ? $column : ', '.$column;
-                                $i++;
-                            }
-                            $cmd .= ");\n\n";
-                        }
-                    }
-              //  }
+                if(!$this->tableExists($model['table'])){
+                    return SqlGenerator::createTable($model);
+                }
             }elseif($type == 'view'){
-                $cmd = "CREATE OR REPLACE VIEW ".$this->dbname.".".$model['view']
-                            ." AS\n".str_replace("'", "\'", $model['definition']).";\n\n";
+                return SqlGenerator::createView($model);
             }else{
                 throw new \Exception('Bound unknown object type');
             }
-            return $cmd;
         }
 
         private function writeMigration($cmd){
@@ -82,6 +49,7 @@
         }
 
         public function fileMigration($file){
+            File::checkFile($file);
             $cmd = file_get_contents($file);
             $this->cmdMigration($cmd);
         }
@@ -89,7 +57,7 @@
         public function cmdMigration($cmd){
             $request = new Request($this->dbname);
             $request->setCmd($cmd);
-            $request->getResults();
+            $request->bindexec();
         }
 
         public function collect(){
@@ -145,7 +113,8 @@
 
         private function tableExists($table){
             $request = new Request($this->dbname);
-            $request->setCmd('select * from '.$table.' limit 1');
+            $request->setCmd($request->getdbType()->getTableExistsRequest());
+            $request->addBinds(array('table' => $table));
             if(empty($request->getResults())) return false;
             else return true;
         }

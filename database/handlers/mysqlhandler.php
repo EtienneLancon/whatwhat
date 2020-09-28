@@ -39,9 +39,13 @@
 
         static public function getIndexFilter(){
             return array('wwindex' => 'Key_name',
-                        'wwcolumn' => 'Column_name',
-                        'wwnull' => 'Null',
-                        'wwtype' => 'Index_type');
+                        'wwcolumn' => 'Column_name');
+        }
+
+        static public function getTableExistsRequest(){
+            return "select *
+                    from information_schema.TABLES t
+                    where t.TABLE_NAME  = :table";
         }
 
         static public function getDefaultPort(){

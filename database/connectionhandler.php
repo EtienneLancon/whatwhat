@@ -15,5 +15,7 @@
 
         static public function getIndexFilter();
 
+        static public function getTableExistsRequest();
+
         static public function getDefaultPort();
     }

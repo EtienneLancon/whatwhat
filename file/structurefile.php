@@ -6,7 +6,7 @@
         static public $viewsDirectory = 'wwviews';
 
         public function get(){
-            $this->checkFile();
+            $this->checkFile($this->path);
             if($this->isArrayFile()) return include($this->path);
             else{
                 trigger_error('File '.$this->path.' seems not to return a valid php array, ignoring.', E_USER_NOTICE);

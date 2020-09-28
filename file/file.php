@@ -18,12 +18,12 @@
             }
         }
 
-        protected function checkFile(){
-            if(!is_file($this->path)) throw new \Exception("Can't locate file ".$this->path);
+        static public function checkFile($path){
+            if(!is_file($path)) throw new \Exception("Can't locate file ".$path);
         }
 
         public function display(){
-            $this->checkFile();
+            $this->checkFile($this->path);
             $file = file($this->path);
             $output = "";
             foreach($file as $line){

@@ -15,10 +15,10 @@
             $this->db = new Connection($dbname);
         }
 
-        protected function bindexec(){
+        public function bindexec(){
+            $this->setStmt();
             if(!empty($this->binds)){
                 foreach($this->binds as $param => $value){
-                    if(strpos($param, '__table') === 0) throw new \Exception('A table binding must be done before statement is setted');
                     if(is_bool($value)){
                         $this->stmt->bindValue(':'.$param, $value, \PDO::PARAM_BOOL);
                     }elseif(is_numeric($value) && is_integer($value)){
@@ -62,12 +62,9 @@
         }
 
         public function getResults(){
-            $this->setStmt();
             $this->bindexec();
             $return = array();
-            var_dump($this->stmt);
             while(($row = $this->stmt->fetchObject()) !== false){
-                echo "toto";
                 array_push($return, $row);
             }
             return $return;
