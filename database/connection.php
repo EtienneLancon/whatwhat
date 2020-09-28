@@ -60,7 +60,8 @@
                     require_once('whatwhat/database/handlers/sqlsrvhandler.php');
                     return new SqlsrvHandler();
                 default:
-                    throw new \Exception('Unknown database type.');
+                    paramcheck($dbtype, 'string');
+                    throw new \Exception('Unknown database type : '.$dbtype);
             }
         }
 

@@ -2,6 +2,7 @@
     namespace whatwhat\database;
 
     class MysqlHandler implements ConnectionHandler{
+        const defaultPort = "3306";
 
         static public function getPdoString(){
             return "mysql:host=#host#:#port#;dbname=#dbname#";
@@ -32,10 +33,18 @@
                     WHERE Key_name <> 'primary'";
         }
 
+        static public function getIndexRequestBindName(){
+            return "__table";
+        }
+
         static public function getIndexFilter(){
             return array('wwindex' => 'Key_name',
                         'wwcolumn' => 'Column_name',
                         'wwnull' => 'Null',
                         'wwtype' => 'Index_type');
+        }
+
+        static public function getDefaultPort(){
+            return self::defaultPort;
         }
     }

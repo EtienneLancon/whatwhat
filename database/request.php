@@ -15,18 +15,6 @@
             $this->db = new Connection($dbname);
         }
 
-        public function getdbType(){
-            return $this->db->getdbType();
-        }
-
-        public function getdbName(){
-            return $this->db->getdbName();
-        }
-
-        public function setCmd($cmd){
-            $this->cmd = $cmd;
-        }
-
         protected function bindexec(){
             if(!empty($this->binds)){
                 foreach($this->binds as $param => $value){
@@ -77,7 +65,9 @@
             $this->setStmt();
             $this->bindexec();
             $return = array();
+            var_dump($this->stmt);
             while(($row = $this->stmt->fetchObject()) !== false){
+                echo "toto";
                 array_push($return, $row);
             }
             return $return;
@@ -95,5 +85,17 @@
 
         public function setBindCount($nb){
             $this->bindCount = $nb;
+        }
+
+        public function getdbType(){
+            return $this->db->getdbType();
+        }
+
+        public function getdbName(){
+            return $this->db->getdbName();
+        }
+
+        public function setCmd($cmd){
+            $this->cmd = $cmd;
         }
     }

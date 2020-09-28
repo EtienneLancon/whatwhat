@@ -68,7 +68,7 @@
               //  }
             }elseif($type == 'view'){
                 $cmd = "CREATE OR REPLACE VIEW ".$this->dbname.".".$model['view']
-                            ." AS\n".$model['definition'].";\n\n";
+                            ." AS\n".str_replace("'", "\'", $model['definition']).";\n\n";
             }else{
                 throw new \Exception('Bound unknown object type');
             }
@@ -153,8 +153,12 @@
         private function getIndexes($table){
             $request = new Request($this->dbname);
             $request->setCmd($request->getdbType()->getIndexRequest());
-            $request->addBinds(array('__table' => $table));
+            $request->addBinds(array($request->getdbType()->getIndexRequestBindName() => $table));
             $indexes = $request->getResults();
+            var_dump($table);
+            var_dump($request->getdbType()->getIndexRequestBindName());
+            var_dump($indexes);
+
             return $this->filterIndex($request->getdbType()->getIndexFilter(), $indexes);
         }
 

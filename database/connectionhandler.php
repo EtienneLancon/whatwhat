@@ -11,5 +11,9 @@
 
         static public function getIndexRequest();
 
+        static public function getIndexRequestBindName();
+
         static public function getIndexFilter();
+
+        static public function getDefaultPort();
     }
