@@ -7,15 +7,7 @@
             $pk = null;
             $cmd = "CREATE TABLE ".$model['table']." (\n\t";
             foreach($model['fields'] as $field => $desc){
-                $cmd .= $field." ".$desc['type'];
-                if(array_key_exists('length', $desc)){
-                    $cmd .= " (".$desc['length'].")";
-                }
-                if($desc['nullable'] === false) $cmd .= " NOT NULL";
-                if(array_key_exists('autoincrement', $desc) && $desc['autoincrement'] === true){
-                    $cmd .= " AUTO_INCREMENT";
-                }
-                $cmd .= ", \n\t";
+                $cmd .= self::writeColumn($field, $desc).", \n\t";
                 if(array_key_exists('primary', $desc) && $desc['primary'] === true){
                     $pk = $field;
                 }
@@ -40,24 +32,63 @@
 
         static public function alterTable($model, $existingTable){
             $onlyInNewModel = $model;
+            $cmd = '';
+            $tmp = '';
+            $tmpCmdModify;
+            $first = true;
             foreach($existingTable as &$existingColumn){
                 $existingColumn->foundInModel = false;
                 if($existingColumn->wwtable == $onlyInNewModel['table']){
                     foreach($onlyInNewModel['fields'] as $fieldname => &$fielddata){
-                        if($fieldname == $existingColumn->wwfield){
+                        if($fieldname == $existingColumn->wwfield){ //field in both old in new table, look for changes
                             $existingColumn->foundInModel = true;
                             unset($onlyInNewModel['fields'][$fieldname]);
+                            var_dump($fielddata);
+                            var_dump($existingColumn);
+                            $hasmodified = false;
+                            foreach($fielddata as $data => $value){
+                                if($value == $existingColumn->{'ww'.$data}){
+                                    if(!$hasmodified){
+                                        //$tmpCmdModify .= 'ALTER TABLE '.$model['table'];
+                                        //$hasmodified = true;
+                                    }
+                                }
+                            }
+                            //exit;
                         }
                     }
                     if(!$existingColumn->foundInModel){     //only in old table.
-                        echo $existingColumn->wwfield." n'est pas dans le nouveau.\n";
+                        $tmp .= "\n\t\tCOLUMN ".$existingColumn->wwfield.(($first) ? "," : "");
                     }
-                }else throw new \Exception("<br/>Error during treatment : new and existing table mismatch. "
+                }else throw new \Exception(ln()."Error during treatment : new and existing table mismatch. "
                                                 .$existingColumn->wwtable." --- ".$model['table']);
             }
-            foreach($onlyInNewModel as $fieldname => $field){     //only in new table.
-                echo $fieldname." n'est pas dans l'existant.\n";
+
+            if(strlen($tmp) > 0) $cmd = 'ALTER TABLE '.$model['table']."\n\tDROP ".substr($tmp, 0, strlen($tmp)-1).";\n\n";
+
+            $first = true;
+            $tmp = '';
+            foreach($onlyInNewModel['fields'] as $field => $desc){     //only in new table.
+                $tmp .= (($first) ? '' : "\n\t, ").self::writeColumn($field, $desc);
+                $first = false;
             }
+
+            if(strlen($tmp) > 0) $cmd .= 'ALTER TABLE '.$model['table']."\n\tADD ".$tmp.";\n\n";
+            
+
+            return $cmd;
+        }
+
+        static private function writeColumn($field, $desc){
+            $cmd = $field." ".$desc['type'];
+            if(array_key_exists('length', $desc)){
+                $cmd .= " (".$desc['length'].")";
+            }
+            if($desc['nullable'] === false) $cmd .= " NOT NULL";
+            if(array_key_exists('autoincrement', $desc) && $desc['autoincrement'] === true){
+                $cmd .= " AUTO_INCREMENT";
+            }
+            return $cmd;
         }
 
         static public function createView($model){

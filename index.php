@@ -6,7 +6,8 @@
    require("bootstrap/require.php");
 
 
-
-
+   echo "toto";
+   echo ln(10);
+   echo "tutu";
    $ww = new Migration('eni');
    $ww->migrate();
