@@ -39,25 +39,24 @@
         }
 
         static public function alterTable($model, $existingTable){
-            foreach($existingTable as $existingColumn){
-                if($existingColumn->wwtable == $model['table']){
-                    if(array_key_exists($existingColumn->wwfield, $model['fields'])){ //in new and old tables.
-                        echo $existingColumn->wwfield." ca existe\n";
-                    }else{                                                          //only in old table.
-                        echo $existingColumn->wwfield." ca existe pas\n";
-                    }
-                    foreach($model['fields'] as $fieldname => &$fielddata){
+            $onlyInNewModel = $model;
+            foreach($existingTable as &$existingColumn){
+                $existingColumn->foundInModel = false;
+                if($existingColumn->wwtable == $onlyInNewModel['table']){
+                    foreach($onlyInNewModel['fields'] as $fieldname => &$fielddata){
                         if($fieldname == $existingColumn->wwfield){
-                            $fielddata['inExisting'] = true;
+                            $existingColumn->foundInModel = true;
+                            unset($onlyInNewModel['fields'][$fieldname]);
                         }
+                    }
+                    if(!$existingColumn->foundInModel){     //only in old table.
+                        echo $existingColumn->wwfield." n'est pas dans le nouveau.\n";
                     }
                 }else throw new \Exception("<br/>Error during treatment : new and existing table mismatch. "
                                                 .$existingColumn->wwtable." --- ".$model['table']);
             }
-            foreach($model['fields'] as $fieldname => $field){
-                if(!array_key_exists('inExisting', $field)){     //only in new table.
-                    echo $fieldname." n'est pas dans l'existant.\n";
-                }
+            foreach($onlyInNewModel as $fieldname => $field){     //only in new table.
+                echo $fieldname." n'est pas dans l'existant.\n";
             }
         }
 
