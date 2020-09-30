@@ -36,7 +36,7 @@
                 $pdostring = $this->dbtype->getPdoString();
 
                 $pdostring = str_replace("#host#", $dbParam['host'], $pdostring);
-                $pdostring = str_replace("#port#", $dbParam['port'], $pdostring);
+                $pdostring = str_replace("#port#", (!empty($dbParam['port'])) ? $dbParam['port'] : $this->dbtype->getDefaultPort(), $pdostring);
                 $pdostring = str_replace("#dbname#", $this->dbname, $pdostring);
 
                 $pdo_options[\PDO::ATTR_ERRMODE] = \PDO::ERRMODE_EXCEPTION;

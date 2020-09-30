@@ -58,6 +58,7 @@
         }
 
         public function addBinds($addedBinds){
+            paramcheck($addedBinds, 'array');
             $this->binds = array_merge($addedBinds, $this->binds);
         }
 
