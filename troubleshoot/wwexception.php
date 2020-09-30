@@ -24,7 +24,7 @@
         }
 
         private function buildoutput($trace){
-            $this->output .= "<br/><br/> in ".$trace['file']." on line <b>".$trace['line']."</b>, calling ";
+            $this->output .= ln(2)."in ".$trace['file']." on line <b>".$trace['line']."</b>, calling ";
             if(isset($trace['class'])){
                 $this->output .= $trace['class'].(($trace['function'] == '__construct') ? "()" : "->");
             }
@@ -32,8 +32,16 @@
             
             if(!empty($trace['args'])){
                 $this->output .= ' with args :';
-                foreach($trace['args'] as $arg => $value){
-                    $this->output .= '<br/>'.$arg.' => '.$value;
+                $this->traceToString($trace['args']);
+            }
+        }
+
+        private function traceToString($trace){
+            foreach($trace as $arg => $value){
+                if(is_array($value)) $this->output .= ln().$arg.' => '."Array";
+                elseif(is_object($value)) $this->output .= ln().$arg.' => '."Object ".get_class($value);
+                else{
+                    $this->output .= ln().$arg.' => '.$value;
                 }
             }
         }

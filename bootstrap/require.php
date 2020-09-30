@@ -4,7 +4,6 @@
     require('whatwhat/usual/silly.php');
     require('whatwhat/bootstrap/errorhandler.php');
     require('whatwhat/troubleshoot/wwexception.php');
-    require('whatwhat/troubleshoot/paramcheck.php');
     require('whatwhat/file/file.php');
     require('whatwhat/file/structurefile.php');
     require('whatwhat/file/directory.php');

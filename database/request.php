@@ -68,6 +68,7 @@
             while(($row = $this->stmt->fetchObject()) !== false){
                 array_push($return, $row);
             }
+            $this->binds = array();
             return $return;
         }
 

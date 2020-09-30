@@ -67,6 +67,10 @@
                     where t.TABLE_NAME  = :table";
         }
 
+        static public function alterTable($tableName, $addedColumns, $droppedColumns, $modifiedColumns){
+            
+        }
+
         static public function getDefaultPort(){
             return self::defaultPort;
         }

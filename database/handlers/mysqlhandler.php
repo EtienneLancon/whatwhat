@@ -62,6 +62,44 @@
                     where t.TABLE_NAME  = :table";
         }
 
+        static public function alterTable($tableName, $addedColumns, $droppedColumns, $modifiedColumns){
+            $cmd = '';
+            
+            if(!empty($addedColumns)){
+                $cmd .= 'ALTER TABLE '.$tableName."\n\tADD ";
+                $first = true;
+                foreach($addedColumns as $addedColumn){
+                    if($first){
+                        $cmd .= $addedColumn;
+                        $first = false;
+                    }else $cmd .= "\n\t, ".$addedColumn;
+                }
+                $cmd .= ";\n\n";
+            }
+
+            if(!empty($droppedColumns)){
+                $cmd .= 'ALTER TABLE '.$tableName." DROP";
+                $first = true;
+                foreach($droppedColumns as $droppedColumn){
+                    $cmd .= "\n\tCOLUMN ".$droppedColumn.(($first) ? "" : ",");
+                    $first = false;
+                }
+                $cmd .= ";\n\n";
+            }
+
+            if(!empty($modifiedColumns)){
+                $cmd .= 'ALTER TABLE '.$tableName;
+                $first = true;
+                foreach($modifiedColumns as $modifiedColumn){
+                    $cmd .= "\n\tMODIFY ".$modifiedColumn.(($first) ? "" : ",");
+                    $first = false;
+                }
+                $cmd .= ";\n\n";
+            }
+
+            return $cmd;
+        }
+
         static public function getDefaultPort(){
             return self::defaultPort;
         }

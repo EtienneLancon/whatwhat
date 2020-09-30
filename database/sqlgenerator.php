@@ -30,10 +30,16 @@
             return $cmd;
         }
 
-        static public function alterTable($model, $existingTable){
+        static public function alterTable($dbtype, $model, $existingTable){
+            var_dump($model);
+            var_dump($existingTable);
+            exit;
             $onlyInNewModel = $model;
             $cmd = '';
             $tmp = '';
+            $droppedColumns = array();
+            $addedColumns = array();
+            $modifiedColumns = array();
             $tmpCmdModify;
             $first = true;
             foreach($existingTable as &$existingColumn){
@@ -43,40 +49,29 @@
                         if($fieldname == $existingColumn->wwfield){ //field in both old in new table, look for changes
                             $existingColumn->foundInModel = true;
                             unset($onlyInNewModel['fields'][$fieldname]);
-                            var_dump($fielddata);
-                            var_dump($existingColumn);
-                            $hasmodified = false;
+                            
+                            $modified = array();
                             foreach($fielddata as $data => $value){
-                                if($value == $existingColumn->{'ww'.$data}){
-                                    if(!$hasmodified){
-                                        //$tmpCmdModify .= 'ALTER TABLE '.$model['table'];
-                                        //$hasmodified = true;
-                                    }
+                                if($value != $existingColumn->{'ww'.$data}){
+                                    $modified[$data] = $value;
                                 }
                             }
-                            //exit;
+                            if(!empty($modified)) $modifiedColumns[] = self::writeColumn($fieldname, $modified);
                         }
                     }
                     if(!$existingColumn->foundInModel){     //only in old table.
-                        $tmp .= "\n\t\tCOLUMN ".$existingColumn->wwfield.(($first) ? "," : "");
+                        $droppedColumns[] = $existingColumn->wwfield;
                     }
                 }else throw new \Exception(ln()."Error during treatment : new and existing table mismatch. "
-                                                .$existingColumn->wwtable." --- ".$model['table']);
+                                                .$model['table']." --- ".$existingColumn->wwtable);
             }
 
-            if(strlen($tmp) > 0) $cmd = 'ALTER TABLE '.$model['table']."\n\tDROP ".substr($tmp, 0, strlen($tmp)-1).";\n\n";
-
-            $first = true;
-            $tmp = '';
             foreach($onlyInNewModel['fields'] as $field => $desc){     //only in new table.
-                $tmp .= (($first) ? '' : "\n\t, ").self::writeColumn($field, $desc);
-                $first = false;
+                $addedColumns[] = self::writeColumn($field, $desc);
             }
-
-            if(strlen($tmp) > 0) $cmd .= 'ALTER TABLE '.$model['table']."\n\tADD ".$tmp.";\n\n";
             
 
-            return $cmd;
+            return $dbtype->alterTable($model['table'], $addedColumns, $droppedColumns, $modifiedColumns);
         }
 
         static private function writeColumn($field, $desc){
