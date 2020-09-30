@@ -35,13 +35,10 @@
             var_dump($existingTable);
             exit;
             $onlyInNewModel = $model;
-            $cmd = '';
-            $tmp = '';
             $droppedColumns = array();
             $addedColumns = array();
             $modifiedColumns = array();
-            $tmpCmdModify;
-            $first = true;
+            
             foreach($existingTable as &$existingColumn){
                 $existingColumn->foundInModel = false;
                 if($existingColumn->wwtable == $onlyInNewModel['table']){
