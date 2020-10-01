@@ -59,7 +59,8 @@
         static public function getTableExistsRequest(){
             return "select *
                     from information_schema.TABLES t
-                    where t.TABLE_NAME  = :table";
+                    where t.TABLE_NAME  = :table
+                    and t.TABLE_SCHEMA = :schema";
         }
 
         static public function alterTable($tableName, $addedColumns, $droppedColumns, $modifiedColumns){

@@ -9,5 +9,7 @@
    echo "toto";
    echo ln(10);
    echo "tutu";
-   $ww = new Migration('eni');
+   $ww = new Migration();
+   $ww->setSourceDb('dev:eni');
+   $ww->setTargetDb('dev:djBook');
    $ww->migrate();

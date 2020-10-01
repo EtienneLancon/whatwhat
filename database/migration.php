@@ -6,13 +6,15 @@
     class Migration{
         static private $migrationDirectory = 'wwmigrations';
         private $request;
-
-        public function __construct($dbname){
-            paramcheck($dbname, 'string');
-            $this->request = new Request($dbname);
-        }
+        private $sourceDb;
+        private $targetDb;
 
         public function migrate(){
+            $this->pullStructure();
+            $this->pushStructure();
+        }
+
+        public function pushStructure(){
             $cmd = '';
             $tables = Directory::scandir(StructureFile::$tablesDirectory);
             foreach($tables as $table){
@@ -32,11 +34,11 @@
 
         private function makeSql($model, $type){
             if($type == 'table'){
-                if(!$this->tableExists($model['table'])){
+                if(!$this->targetDb->tableExists($model['table'])){
                     return SqlGenerator::createTable($model);
                 }else{
-                    $existingTable = $this->getColumnList($model['table']);
-                    $existingTable['indexes'] = $this->getIndexes($model['table']);
+                    $existingTable = $this->targetDb->collectColumnList($model['table']);
+                    $existingTable['indexes'] = $this->targetDb->getIndexes($model['table']);
                     return SqlGenerator::alterTable($this->request->getdbType(), $model, $existingTable);
                 }
             }elseif($type == 'view'){
@@ -48,7 +50,7 @@
 
         private function writeMigration($cmd){
             Directory::isdir(self::$migrationDirectory);
-            $migFile = new StructureFile(self::$migrationDirectory.'/'.$this->request->getdbName().date('Y-d-n_H-i-s').'.mig');
+            $migFile = new StructureFile(self::$migrationDirectory.'/'.$this->targetDb->getdbName().date('Y-d-n_H-i-s').'.mig');
             $migFile->write($cmd);
         }
 
@@ -63,10 +65,10 @@
             $this->request->bindexec();
         }
 
-        public function collect(){
-            $this->createModels($this->getColumnList());
+        public function pullStructure(){
+            $this->createModels($this->sourceDb->collectColumnList());
 
-            $this->createViews($this->getViewList());
+            $this->createViews($this->sourceDb->collectViewList());
         }
 
         private function createModels($columnList){
@@ -76,9 +78,9 @@
             foreach($columnList as $column){
                 if($previousTable != $column->wwtable){
                     if(!is_null($previousTable)){
-                        $indexes = $this->getIndexes($previousTable);
+                        $indexes = $this->sourceDb->getIndexes($previousTable);
                         $f = new StructureFile(StructureFile::$tablesDirectory.'/'.$previousTable.'.php');
-                        $f->writeModel($this->request->getdbName(), $previousTable, $fields, $indexes);
+                        $f->writeModel($this->sourceDb->getdbName(), $previousTable, $fields, $indexes);
                     }
                     $fields = array();
                     $previousTable = $column->wwtable;
@@ -91,67 +93,36 @@
                 $fields[$column->wwfield]['default'] = wwnull($column->wwdefault);
             }
 
-            $indexes = $this->getIndexes($previousTable);
+            $indexes = $this->sourceDb->getIndexes($previousTable);
             $f = new StructureFile(StructureFile::$tablesDirectory.'/'.$previousTable.'.php');
-            $f->writeModel($this->request->getdbName(), $previousTable, $fields, $indexes);
+            $f->writeModel($this->sourceDb->getdbName(), $previousTable, $fields, $indexes);
         }
 
         public function createViews($viewList){
             Directory::isdir(StructureFile::$viewsDirectory);
             foreach($viewList as $view){
                 $f = new StructureFile(StructureFile::$viewsDirectory.'/'.$view->wwview.'.php');
-                $f->writeView($this->request->getdbName(), $view->wwview, $view->wwdefinition);
+                $f->writeView($this->sourceDb->getdbName(), $view->wwview, $view->wwdefinition);
             }
-        }
-
-        private function tableExists($table){
-            $this->request->setCmd($this->request->getdbType()->getTableExistsRequest());
-            $this->request->addBinds(array('table' => $table));
-            if(empty($this->request->getResults())) return false;
-            else return true;
-        }
-
-        private function getIndexes($table){
-            $this->request->setCmd($this->request->getdbType()->getIndexRequest());
-            $this->request->addBinds(array($this->request->getdbType()->getIndexRequestBindName() => $table));
-            $indexes = $this->request->getResults();
-
-            return $this->filterIndex($this->request->getdbType()->getIndexFilter(), $indexes);
-        }
-
-        public function filterIndex($filter, $indexes){
-            $temp = array();
-            $i = 0;
-            foreach($indexes as $index){
-                foreach($filter as $wwname => $value){
-                    $temp[$i][$wwname] = $index->$value;
-                }
-                $i++;
-            }
-            return $temp;
-        }
-
-        private function getColumnList($table = null){
-            if(!is_null($table)){
-                $this->request->setCmd($this->request->getdbType()->getTableRequest());
-                $this->request->addBinds(array('dbName' => $this->request->getdbName(), 'table' => $table));
-            }else{
-                $this->request->setCmd($this->request->getdbType()->getTableListRequest());
-                $this->request->addBinds(array('dbName' => $this->request->getdbName()));
-            }
-            $columnList = $this->request->getResults();
-            if(empty($columnList)) echo "<br/><b>No columns found.</b>";
-            return $columnList;
-        }
-
-        private function getViewList(){
-            $this->request->setCmd($this->request->getdbType()->getViewListRequest());
-            $viewList = $this->request->getResults();
-            if(empty($viewList)) echo "<br/><b>No views found.</b>";
-            return $viewList;
         }
 
         public static function setMigrationDirectory($dir){
             self::$migrationDirectory = $dir;
+        }
+
+        public function setSourceDb($dbtag){
+            paramcheck($dbtag, 'string');
+            if(strpos($dbtag, ':') === false || count($data = explode(':', $dbtag)) != 2)
+                    throw new \Exception('Source database wrongly defined. Expecting "envname:databasename"');
+            
+            $this->sourceDb = new DbImage($data[0], $data[1]);
+        }
+
+        public function setTargetDb($dbtag){
+            paramcheck($dbtag, 'string');
+            if(strpos($dbtag, ':') === false || count($data = explode(':', $dbtag)) != 2)
+                    throw new \Exception('Target database wrongly defined. Expecting "envname:databasename"');
+            
+            $this->targetDb = new DbImage($data[0], $data[1]);
         }
     }

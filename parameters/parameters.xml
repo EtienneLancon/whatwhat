@@ -9,5 +9,15 @@
             <port>3306</port>
             <type>mysql</type>
         </connection>
-    </env>    
+    </env>
+    <env>
+        <name>toto</name>
+        <connection>
+            <user>tutu</user>
+            <pwd>titi</pwd>
+            <host>plusloin</host>
+            <port>labas</port>
+            <type>sqlsrv</type>
+        </connection>
+    </env>  
 </root>

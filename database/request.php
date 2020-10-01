@@ -8,11 +8,11 @@
         protected $bindCount;
         protected $binds;
 
-        public function __construct($dbname){
+        public function __construct($env, $dbname){
             paramcheck($dbname, 'string');
             $this->bindCount = 0;
             $this->binds = array();
-            $this->db = new Connection($dbname);
+            $this->db = new Connection($env, $dbname);
         }
 
         public function bindexec(){
@@ -92,6 +92,10 @@
 
         public function getdbName(){
             return $this->db->getdbName();
+        }
+
+        public function getEnv(){
+            return $this->db->getEnv();
         }
 
         public function setCmd($cmd){

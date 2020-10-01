@@ -9,23 +9,28 @@
         private $dbtype;
         private static $known = array();
 
-        public function __construct($dbName){
+        public function __construct($env, $dbName){
             $this->dbname = $dbName;
-            $this->set();
+            $this->env = $env;
+            $this->set($env);
         }
 
-        private function set(){
+        private function set($env){
             if(array_key_exists($this->dbname, self::$known) === false){
                 $file = new ParsedXml();
                 $file->__set('root', 'root');
                 $file->__set('whatwhat/parameters/parameters.xml', 'path');
                 $file->__set('xml', 'type');
 
-                $context = array('user' => 'root/env/connection/user',
-                                'pwd' => 'root/env/connection/pwd',
-                                'host' => 'root/env/connection/host',
-                                'port' => 'root/env/connection/port',
-                                'dbtype' => 'root/env/connection/type');
+                $context = array('lookfor' =>
+                                array('user' => 'root/env/connection/user',
+                                        'pwd' => 'root/env/connection/pwd',
+                                        'host' => 'root/env/connection/host',
+                                        'port' => 'root/env/connection/port',
+                                        'dbtype' => 'root/env/connection/type'),
+                                'condition' => 
+                                array('path' => 'root/env/name',
+                                        'value' => $env));
 
                 $file->__set($context, 'context');
 
@@ -79,5 +84,9 @@
 
         public function getDbName(){
             return $this->dbname;
+        }
+
+        public function getEnv(){
+            return $this->env;
         }
     }
