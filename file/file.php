@@ -27,7 +27,7 @@
             $file = file($this->path);
             $output = "";
             foreach($file as $line){
-                $output .= "<br/>".$line; 
+                $output .= ln().$line; 
             }
             echo $output;
         }

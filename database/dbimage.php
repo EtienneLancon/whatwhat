@@ -1,14 +1,19 @@
 <?php
     namespace whatwhat\database;
+    use whatwhat\file\Directory;
+    use whatwhat\file\StructureFile;
 
     class DbImage{
-        private $tableList;
-        private $viewList;
-        private $indexList;
+        private $tableList = array();
+        private $viewList = array();
         private $request;
+        private $date;
+        private $directory;
 
-        public function __construct($env, $dbname){
-            $this->request = new Request($env, $dbname);
+        public function __construct($dbtag, $type){
+            $this->request = new Request($dbtag);
+            $this->date = date('Y-d-n_H-i-s');
+            $this->directory = (($type == 'old') ? Migration::$saveDirectory.$this->date."/" : "");
         }
 
         public function collectColumnList($table = null){
@@ -20,16 +25,16 @@
                 $this->request->addBinds(array('dbName' => $this->getdbName()));
             }
             $columnList = $this->request->getResults();
-            if(empty($columnList)) echo "<br/><b>No columns found.</b>";
+            if(empty($columnList)) echo ln()."<b>No columns found in ".$this->request->getdbName().".</b>";
             return $columnList;
         }
 
         public function collectViewList(){
             $this->request->setCmd($this->request->getdbType()->getViewListRequest());
             $this->request->addBinds(array('dbName' => $this->getdbName()));
-            $this->viewList = $this->request->getResults();
-            if(empty($this->viewList)) echo "<br/><b>No views found.</b>";
-            return $this->viewList;
+            $viewList = $this->request->getResults();
+            if(empty($viewList)) echo ln()."<b>No views found in ".$this->request->getdbName().".</b>";
+            return $viewList;
         }
 
         public function tableExists($table){
@@ -58,6 +63,47 @@
                 $i++;
             }
             return $temp;
+        }
+
+        public function createModels(){
+            $columnList = $this->collectColumnList();
+            Directory::mkpath($this->directory.StructureFile::$tablesDirectory);
+
+            $previousTable = null;
+            $fields = array();
+            foreach($columnList as $column){
+                if($previousTable != $column->wwtable){
+                    if(!is_null($previousTable)){
+                        $this->tableList[] = $previousTable;
+                        $indexes = $this->getIndexes($previousTable);
+                        $f = new StructureFile($this->directory.StructureFile::$tablesDirectory.$previousTable.'.php');
+                        $f->writeModel($this->getdbName(), $previousTable, $fields, $indexes);
+                    }
+                    $fields = array();
+                    $previousTable = $column->wwtable;
+                }
+                $fields[$column->wwfield]['nullable'] = $column->wwnullable;
+                $fields[$column->wwfield]['type'] = $column->wwtype;
+                $fields[$column->wwfield]['length'] = $column->wwlength;
+                $fields[$column->wwfield]['primary'] = $column->wwprimary;
+                $fields[$column->wwfield]['autoincrement'] = $column->wwautoincrement;
+                $fields[$column->wwfield]['default'] = wwnull($column->wwdefault);
+            }
+
+            $this->tableList[] = $previousTable;
+            $indexes = $this->getIndexes($previousTable);
+            $f = new StructureFile($this->directory.StructureFile::$tablesDirectory.$previousTable.'.php');
+            $f->writeModel($this->getdbName(), $previousTable, $fields, $indexes);
+        }
+
+        public function createViews(){
+            $viewList = $this->collectViewList();
+            Directory::mkpath($this->directory.StructureFile::$viewsDirectory);
+            foreach($viewList as $view){
+                $this->viewList[] = $view->wwview;
+                $f = new StructureFile($this->directory.StructureFile::$viewsDirectory.$view->wwview.'.php');
+                $f->writeView($this->getdbName(), $view->wwview, $view->wwdefinition);
+            }
         }
 
         public function setTableList($tableList){
@@ -90,5 +136,9 @@
 
         public function getdbName(){
             return $this->request->getdbName();
+        }
+
+        public function getDate(){
+            return $this->date;
         }
     }

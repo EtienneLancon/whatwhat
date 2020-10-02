@@ -8,11 +8,12 @@
         protected $bindCount;
         protected $binds;
 
-        public function __construct($env, $dbname){
-            paramcheck($dbname, 'string');
+        public function __construct($dbtag){
+            if(strpos($dbtag, ':') === false || count($data = explode(':', $dbtag)) != 2)
+                            throw new \Exception('Database wrongly defined. Expecting "envname:databasename"');
             $this->bindCount = 0;
             $this->binds = array();
-            $this->db = new Connection($env, $dbname);
+            $this->db = new Connection($data[0], $data[1]);
         }
 
         public function bindexec(){

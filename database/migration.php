@@ -4,14 +4,34 @@
     use whatwhat\file\Directory;
 
     class Migration{
-        static private $migrationDirectory = 'wwmigrations';
+        static public $migrationDirectory = 'wwmigrations/';
+        static public $saveDirectory = 'wwsave/';
         private $request;
         private $sourceDb;
         private $targetDb;
+        private $cmd = '';
 
         public function migrate(){
-            $this->pullStructure();
-            $this->pushStructure();
+            $this->pullNewStructure();
+            $this->saveOldStructure();
+
+            $oldTables = $this->targetDb->getTableList();
+            foreach($this->sourceDb->getTableList() as $newTable){
+                $f = new StructureFile(StructureFile::$tablesDirectory.$newTable.'.php');
+                $newModel = $f->get();
+                if(($existingTable = array_search($newTable, $oldTables)) === false){
+                    $this->cmd .= SqlGenerator::createTable($newModel);
+                }else{
+                    // REWRITE SqlGenerator::alterTable();
+                }
+            }
+            
+            foreach($this->sourceDb->getViewList() as $newView){
+                $f = new StructureFile(StructureFile::$viewsDirectory.$newView.'.php');
+                $newModel = $f->get();
+                $this->cmd .= SqlGenerator::createView($newModel);
+            }
+            $this->writeMigration();
         }
 
         public function pushStructure(){
@@ -48,10 +68,11 @@
             }
         }
 
-        private function writeMigration($cmd){
+        private function writeMigration(){
             Directory::isdir(self::$migrationDirectory);
-            $migFile = new StructureFile(self::$migrationDirectory.'/'.$this->targetDb->getdbName().date('Y-d-n_H-i-s').'.mig');
-            $migFile->write($cmd);
+            $migFile = new StructureFile(self::$migrationDirectory
+                                        .$this->targetDb->getdbName().$this->targetDb->getDate().'.mig');
+            $migFile->write($this->cmd);
         }
 
         public function fileMigration($file){
@@ -65,64 +86,23 @@
             $this->request->bindexec();
         }
 
-        public function pullStructure(){
-            $this->createModels($this->sourceDb->collectColumnList());
+        public function pullNewStructure(){
+            $this->sourceDb->createModels();
 
-            $this->createViews($this->sourceDb->collectViewList());
+            $this->sourceDb->createViews();
         }
 
-        private function createModels($columnList){
-            $previousTable = null;
-            $fields = array();
-            Directory::isdir(StructureFile::$tablesDirectory);
-            foreach($columnList as $column){
-                if($previousTable != $column->wwtable){
-                    if(!is_null($previousTable)){
-                        $indexes = $this->sourceDb->getIndexes($previousTable);
-                        $f = new StructureFile(StructureFile::$tablesDirectory.'/'.$previousTable.'.php');
-                        $f->writeModel($this->sourceDb->getdbName(), $previousTable, $fields, $indexes);
-                    }
-                    $fields = array();
-                    $previousTable = $column->wwtable;
-                }
-                $fields[$column->wwfield]['nullable'] = $column->wwnullable;
-                $fields[$column->wwfield]['type'] = $column->wwtype;
-                $fields[$column->wwfield]['length'] = $column->wwlength;
-                $fields[$column->wwfield]['primary'] = $column->wwprimary;
-                $fields[$column->wwfield]['autoincrement'] = $column->wwautoincrement;
-                $fields[$column->wwfield]['default'] = wwnull($column->wwdefault);
-            }
+        public function saveOldStructure(){
+            $this->targetDb->createModels();
 
-            $indexes = $this->sourceDb->getIndexes($previousTable);
-            $f = new StructureFile(StructureFile::$tablesDirectory.'/'.$previousTable.'.php');
-            $f->writeModel($this->sourceDb->getdbName(), $previousTable, $fields, $indexes);
-        }
-
-        public function createViews($viewList){
-            Directory::isdir(StructureFile::$viewsDirectory);
-            foreach($viewList as $view){
-                $f = new StructureFile(StructureFile::$viewsDirectory.'/'.$view->wwview.'.php');
-                $f->writeView($this->sourceDb->getdbName(), $view->wwview, $view->wwdefinition);
-            }
-        }
-
-        public static function setMigrationDirectory($dir){
-            self::$migrationDirectory = $dir;
+            $this->targetDb->createViews();
         }
 
         public function setSourceDb($dbtag){
-            paramcheck($dbtag, 'string');
-            if(strpos($dbtag, ':') === false || count($data = explode(':', $dbtag)) != 2)
-                    throw new \Exception('Source database wrongly defined. Expecting "envname:databasename"');
-            
-            $this->sourceDb = new DbImage($data[0], $data[1]);
+            $this->sourceDb = new DbImage($dbtag, 'new');
         }
 
-        public function setTargetDb($dbtag){
-            paramcheck($dbtag, 'string');
-            if(strpos($dbtag, ':') === false || count($data = explode(':', $dbtag)) != 2)
-                    throw new \Exception('Target database wrongly defined. Expecting "envname:databasename"');
-            
-            $this->targetDb = new DbImage($data[0], $data[1]);
+        public function setTargetDb($dbtag){            
+            $this->targetDb = new DbImage($dbtag, 'old');
         }
     }

@@ -15,5 +15,16 @@
     
     function paramcheck($value, $expected){
         $given = gettype($value);
-        if($given != $expected) throw new \Exception('Expecting '.$expected.", ".$given." given.");
+
+        if(is_string($expected)){
+            if($given != $expected) throw new \Exception('Expecting '.$expected.", ".$given." given.");
+        }else{
+            $ok = false;
+            foreach($expected as $exp){
+                if($given == $expected) $ok = true;
+            }
+            if(!$ok){
+                throw new \Exception('Expecting '.implode(' or ', $expected).", ".$given." given.");
+            }
+        }
     }

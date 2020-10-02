@@ -2,8 +2,8 @@
     namespace whatwhat\file;
 
     class StructureFile extends File{
-        static public $tablesDirectory = 'wwtables';
-        static public $viewsDirectory = 'wwviews';
+        static public $tablesDirectory = 'wwtables/';
+        static public $viewsDirectory = 'wwviews/';
 
         public function get(){
             $this->checkFile($this->path);
