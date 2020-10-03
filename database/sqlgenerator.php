@@ -30,34 +30,31 @@
             return $cmd;
         }
 
-        static public function alterTable($dbtype, $model, $existingTable){
-            var_dump($model);
-            var_dump($existingTable);
-            exit;
-            $onlyInNewModel = $model;
+        static public function alterTable($dbtype, $newModel, $oldModel){   
+            $onlyInNewModel = $newModel;
             $droppedColumns = array();
             $addedColumns = array();
             $modifiedColumns = array();
             
-            foreach($existingTable as &$existingColumn){
-                $existingColumn->foundInModel = false;
-                if($existingColumn->wwtable == $onlyInNewModel['table']){
-                    foreach($onlyInNewModel['fields'] as $fieldname => &$fielddata){
-                        if($fieldname == $existingColumn->wwfield){ //field in both old in new table, look for changes
-                            $existingColumn->foundInModel = true;
-                            unset($onlyInNewModel['fields'][$fieldname]);
+            foreach($oldModel['fields'] as $oldFieldName => &$oldField){
+                $oldField['foundInNew'] = false;
+                if($oldModel['table'] == $onlyInNewModel['table']){
+                    foreach($onlyInNewModel['fields'] as $newFieldName => &$newField){
+                        if($newFieldName == $oldFieldName){ //field in both old in new table, look for changes
+                            $oldField['foundInNew'] = true;
+                            unset($onlyInNewModel['fields'][$oldFieldName]);
                             
-                            $modified = array();
-                            foreach($fielddata as $data => $value){
-                                if($value != $existingColumn->{'ww'.$data}){
-                                    $modified[$data] = $value;
+                            $modifiedField = array();
+                            foreach($newField as $data => $value){
+                                if($value != $oldField[$data]){
+                                    $modifiedField = $newField;
                                 }
                             }
-                            if(!empty($modified)) $modifiedColumns[] = self::writeColumn($fieldname, $modified);
+                            if(!empty($modifiedField)) $modifiedColumns[] = self::writeColumn($newFieldName, $modifiedField);
                         }
                     }
-                    if(!$existingColumn->foundInModel){     //only in old table.
-                        $droppedColumns[] = $existingColumn->wwfield;
+                    if(!$oldField['foundInNew']){     //only in old table.
+                        $droppedColumns[] = $oldFieldName;
                     }
                 }else throw new \Exception(ln()."Error during treatment : new and existing table mismatch. "
                                                 .$model['table']." --- ".$existingColumn->wwtable);
@@ -67,13 +64,12 @@
                 $addedColumns[] = self::writeColumn($field, $desc);
             }
             
-
-            return $dbtype->alterTable($model['table'], $addedColumns, $droppedColumns, $modifiedColumns);
+            return $dbtype->alterTable($newModel['table'], $addedColumns, $droppedColumns, $modifiedColumns);
         }
 
         static private function writeColumn($field, $desc){
             $cmd = $field." ".$desc['type'];
-            if(array_key_exists('length', $desc)){
+            if(array_key_exists('length', $desc) && $desc['type'] != 'longtext'){
                 $cmd .= " (".$desc['length'].")";
             }
             if($desc['nullable'] === false) $cmd .= " NOT NULL";

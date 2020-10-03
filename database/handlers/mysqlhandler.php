@@ -17,8 +17,9 @@
                     COLUMN_DEFAULT as wwdefault
                     FROM INFORMATION_SCHEMA.COLUMNS C
                     LEFT JOIN INFORMATION_SCHEMA.TABLES T on C.TABLE_NAME = T.TABLE_NAME
-                    where C.TABLE_SCHEMA = :dbName
-                    and TABLE_COMMENT <> 'VIEW'";
+                    WHERE C.TABLE_SCHEMA = :dbName
+                    AND TABLE_COMMENT <> 'VIEW'
+                    GROUP BY wwtable, wwfield";
         }
 
         static public function getTableRequest(){
@@ -80,12 +81,10 @@
 
             if(!empty($droppedColumns)){
                 $cmd .= 'ALTER TABLE '.$tableName." DROP";
-                $first = true;
                 foreach($droppedColumns as $droppedColumn){
-                    $cmd .= "\n\tCOLUMN ".$droppedColumn.(($first) ? "" : ",");
-                    $first = false;
+                    $cmd .= "\n\tCOLUMN ".$droppedColumn.",";
                 }
-                $cmd .= ";\n\n";
+                $cmd = substr($cmd, 0, strlen($cmd)-1).";\n\n";
             }
 
             if(!empty($modifiedColumns)){
