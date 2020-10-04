@@ -13,7 +13,8 @@
         public function __construct($dbtag, $type){
             $this->request = new Request($dbtag);
             $this->date = date('Y-d-n_H-i-s');
-            $this->directory = (($type == 'old') ? Migration::$saveDirectory.$this->date."/" : "");
+            $this->directory = (($type == 'old') ? Migration::$saveDirectory
+                                                .$this->getdbName().$this->date."/" : "");
         }
 
         public function collectColumnList($table = null){

@@ -5,5 +5,6 @@
 
 
    $ww = new Migration();
+   $ww->setSourceDb('dev:djBook');
    $ww->setTargetDb('dev:eni');
    $ww->exec();
