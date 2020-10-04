@@ -67,6 +67,10 @@
             return $dbtype->alterTable($newModel['table'], $addedColumns, $droppedColumns, $modifiedColumns);
         }
 
+        static public function dropTable($tableName){
+            return "DROP TABLE ".$tableName.";\n\n";
+        }
+
         static private function writeColumn($field, $desc){
             $cmd = $field." ".$desc['type'];
             if(array_key_exists('length', $desc) && $desc['type'] != 'longtext'){

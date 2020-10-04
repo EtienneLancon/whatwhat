@@ -12,10 +12,7 @@
         private $cmd = '';
 
         public function migrate(){
-            $this->pullNewStructure();
-            $this->saveOldStructure();
-            $this->createNewStructureCmd();
-            $this->writeMigration();
+            $this->prepare();
             $this->makeMigration();
         }
 
@@ -38,9 +35,39 @@
         }
 
         public function reverse($dir = null){
+            if(is_null($this->targetDb)) throw new \Exception('Must set target database first.');
+
+            $this->setSourceDb($this->targetDb->getdbTag());
             if(is_null($dir)) $dir = Directory::getLatestSaveDir(self::$saveDirectory
-                                            , $this->targetDb->getRequest()->getdbName());
-            var_dump($dir);
+                                            , $this->sourceDb->getRequest()->getdbName());
+
+            
+            $tablesaves = Directory::scandir($dir."/wwtables/");
+            $viewsaves = Directory::scandir($dir."/wwviews/");
+
+            if(!empty($tablesaves)){
+                foreach(Directory::scandir(StructureFile::$tablesDirectory) as $tablefile){
+                    unlink(StructureFile::$tablesDirectory.$tablefile);
+                }
+                foreach($tablesaves as $tablesave){
+                    copy($dir."/wwtables/".$tablesave, StructureFile::$tablesDirectory.$tablesave);
+                    $this->sourceDb->pushInTableList(substr($tablesave, 0, strlen($tablesave)-4));
+                }
+            }
+
+            if(!empty($viewsaves)){
+                foreach(Directory::scandir(StructureFile::$viewsDirectory) as $viewfile){
+                    unlink(StructureFile::$viewsDirectory.$viewfile);
+                }
+                foreach($viewsaves as $viewsave){
+                    copy($dir."/wwviews/".$viewsave, StructureFile::$viewsDirectory.$viewsave);
+                    $this->sourceDb->pushInViewList(substr($viewsave, 0, strlen($viewsave)-4));
+                }
+            }
+            
+            $this->saveOldStructure();
+            $this->createNewStructureCmd();
+            $this->writeMigration();
         }
 
         private function createNewStructureCmd(){
@@ -58,6 +85,12 @@
                     $oldModel = $oldModelFile->get();
                     $this->cmd .= SqlGenerator::alterTable($this->targetDb->getRequest()->getdbType()
                                                             , $newModel, $oldModel);
+                }
+            }
+
+            foreach($oldTables as $oldTable){
+                if(array_search($oldTable, $newTables) === false){
+                    $this->cmd .= SqlGenerator::dropTable($oldTable);
                 }
             }
             
@@ -97,10 +130,10 @@
         }
 
         public function setSourceDb($dbtag){
-            $this->sourceDb = new DbImage($dbtag, 'new');
+            $this->sourceDb = new DbImage($dbtag, 'source');
         }
 
         public function setTargetDb($dbtag){            
-            $this->targetDb = new DbImage($dbtag, 'old');
+            $this->targetDb = new DbImage($dbtag, 'target');
         }
     }

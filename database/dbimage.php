@@ -4,6 +4,7 @@
     use whatwhat\file\StructureFile;
 
     class DbImage{
+        private $dbtag;
         private $tableList = array();
         private $viewList = array();
         private $request;
@@ -11,9 +12,10 @@
         private $directory;
 
         public function __construct($dbtag, $type){
+            $this->dbtag = $dbtag;
             $this->request = new Request($dbtag);
             $this->date = date('Y-d-n_H-i-s');
-            $this->directory = (($type == 'old') ? Migration::$saveDirectory
+            $this->directory = (($type == 'target') ? Migration::$saveDirectory
                                                 .$this->getdbName().$this->date."/" : "");
         }
 
@@ -26,7 +28,7 @@
                 $this->request->addBinds(array('dbName' => $this->getdbName()));
             }
             $columnList = $this->request->getResults();
-            if(empty($columnList)) echo ln()."<b>No columns found in ".$this->request->getdbName().".</b>";
+            if(empty($columnList)) echo ln()."<b>No columns found in ".$this->getdbName().".</b>";
             return $columnList;
         }
 
@@ -34,15 +36,14 @@
             $this->request->setCmd($this->request->getdbType()->getViewListRequest());
             $this->request->addBinds(array('dbName' => $this->getdbName()));
             $viewList = $this->request->getResults();
-            if(empty($viewList)) echo ln()."<b>No views found in ".$this->request->getdbName().".</b>";
+            if(empty($viewList)) echo ln()."<b>No views found in ".$this->getdbName().".</b>";
             return $viewList;
         }
 
         public function tableExists($table){
             $this->request->setCmd($this->request->getdbType()->getTableExistsRequest());
             $this->request->addBinds(array('table' => $table, 'schema' => $this->request->getEnv()));
-            $result = $this->request->getResults();
-            if(empty($result)) return false;
+            if(empty($this->request->getResults())) return false;
             else return true;
         }
 
@@ -72,6 +73,7 @@
 
             $previousTable = null;
             $fields = array();
+            //var_dump($columnList);
             foreach($columnList as $column){
                 if($previousTable != $column->wwtable){
                     if(!is_null($previousTable)){
@@ -90,11 +92,13 @@
                 $fields[$column->wwfield]['autoincrement'] = $column->wwautoincrement;
                 $fields[$column->wwfield]['default'] = wwnull($column->wwdefault);
             }
-
-            $this->tableList[] = $previousTable;
-            $indexes = $this->getIndexes($previousTable);
-            $f = new StructureFile($this->directory.StructureFile::$tablesDirectory.$previousTable.'.php');
-            $f->writeModel($this->getdbName(), $previousTable, $fields, $indexes);
+            if(is_null($previousTable)){
+                echo $previousTable."\n";
+                $this->tableList[] = $previousTable;
+                $indexes = $this->getIndexes($previousTable);
+                $f = new StructureFile($this->directory.StructureFile::$tablesDirectory.$previousTable.'.php');
+                $f->writeModel($this->getdbName(), $previousTable, $fields, $indexes);
+            }
         }
 
         public function createViews(){
@@ -115,20 +119,12 @@
             $this->viewList = $viewList;
         }
 
-        public function setIndexList($indexList){
-            $this->indexList = $indexList;
-        }
-
         public function getTableList(){
             return $this->tableList;
         }
 
         public function getViewList(){
             return $this->viewList;
-        }
-
-        public function getIndexList(){
-            return $this->indexList;
         }
 
         public function getRequest(){
@@ -141,5 +137,17 @@
 
         public function getDate(){
             return $this->date;
+        }
+
+        public function getdbTag(){
+            return $this->dbtag;
+        }
+
+        public function pushInTableList($table){
+            $this->tableList[] = $table;
+        }
+
+        public function pushInViewList($view){
+            $this->viewList[] = $view;
         }
     }
