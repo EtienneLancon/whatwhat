@@ -2,17 +2,23 @@
     namespace whatwhat\file;
 
     class Directory{
-        public static function scandir($dir, $create = false){
+        static public function scandir($dir, $filter = null, $create = false){
             if($create) self::isdir($dir);
-            $no = array('.', '..', '.DS_STORE');
-            return array_diff(scandir($dir), $no);
+            $no = array('.', '..', '.DS_STORE', 'Thumbs.db');
+            $temp = array_diff(scandir($dir), $no);
+            if(!is_null($filter)){
+                foreach($temp as $key => &$file){
+                    if(strpos($file, $filter) === false) unset($temp[$key]);
+                }
+            }
+            return $temp;
         }
         
-        public static function isdir($dir){
+        static public function isdir($dir){
             if(!is_dir($dir) && !mkdir($dir)) throw new \Exception("Can't find or create ".$dir." directory.");
         }
 
-        public static function mkpath($path){
+        static public function mkpath($path){
             if(is_string($path)){
                 $arraypath = explode('/', $path);
             }elseif(is_array($path)){
@@ -29,7 +35,7 @@
         }
 
         static public function getLatestSaveDir($savesDirectory, $dbname){
-            $saves = Directory::scandir($savesDirectory);
+            $saves = Directory::scandir($savesDirectory, $dbname);
             $mostRecent['year'] =  0;
             $mostRecent['month'] = 0;
             $mostRecent['day'] = 0;

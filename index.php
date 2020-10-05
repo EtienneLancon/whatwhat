@@ -5,5 +5,6 @@
 
 
    $ww = new Migration();
-   $ww->setTargetDb('dev:djBook');
-   $ww->reverse();
+   $ww->setSourceDb('dev:djBook');
+   $ww->setTargetDb('dev:eni');
+   $ww->migrate();
