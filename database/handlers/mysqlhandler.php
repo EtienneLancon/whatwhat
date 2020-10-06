@@ -64,7 +64,7 @@
                     and t.TABLE_SCHEMA = :schema";
         }
 
-        static public function alterTable($tableName, $addedColumns, $droppedColumns, $modifiedColumns){
+        static public function alterTable($tableName, $addedColumns, $droppedColumns, $modifiedColumns, $droppedpk){
             $cmd = '';
             
             if(!empty($addedColumns)){
@@ -80,9 +80,9 @@
             }
 
             if(!empty($droppedColumns)){
-                $cmd .= 'ALTER TABLE '.$tableName." DROP";
+                $cmd .= 'ALTER TABLE '.$tableName;
                 foreach($droppedColumns as $droppedColumn){
-                    $cmd .= "\n\tCOLUMN ".$droppedColumn.",";
+                    $cmd .= "\n\tDROP COLUMN ".$droppedColumn.",";
                 }
                 $cmd = substr($cmd, 0, strlen($cmd)-1).";\n\n";
             }
@@ -90,11 +90,15 @@
             if(!empty($modifiedColumns)){
                 $cmd .= 'ALTER TABLE '.$tableName;
                 $first = true;
-                foreach($modifiedColumns as $modifiedColumn){
+                foreach($modifiedColumns as $data => $modifiedColumn){
                     $cmd .= "\n\tMODIFY ".$modifiedColumn.(($first) ? "" : ",");
                     $first = false;
                 }
                 $cmd .= ";\n\n";
+            }
+
+            if($droppedpk){
+                $cmd .= "ALTER TABLE ".$tableName." DROP PRIMARY KEY;\n\n";
             }
 
             return $cmd;

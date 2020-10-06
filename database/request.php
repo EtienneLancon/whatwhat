@@ -34,7 +34,7 @@
         }
         
         protected function setStmt(){
-            foreach(array_keys($this->binds) as &$key){
+            foreach(array_keys($this->binds) as $key){
                 if(strpos($key, '__table') === 0){
                     $this->cmd = str_replace($key, $this->binds[$key], $this->cmd);
                     unset($this->binds[$key]);

@@ -35,6 +35,7 @@
             $droppedColumns = array();
             $addedColumns = array();
             $modifiedColumns = array();
+            $droppedpk = false;
             
             foreach($oldModel['fields'] as $oldFieldName => &$oldField){
                 $oldField['foundInNew'] = false;
@@ -50,6 +51,9 @@
                                     $modifiedField = $newField;
                                 }
                             }
+
+                            if($newField['primary'] == false && $oldField['primary'] == true) $droppedpk = true;
+                            
                             if(!empty($modifiedField)) $modifiedColumns[] = self::writeColumn($newFieldName, $modifiedField);
                         }
                     }
@@ -64,7 +68,7 @@
                 $addedColumns[] = self::writeColumn($field, $desc);
             }
             
-            return $dbtype->alterTable($newModel['table'], $addedColumns, $droppedColumns, $modifiedColumns);
+            return $dbtype->alterTable($newModel['table'], $addedColumns, $droppedColumns, $modifiedColumns, $droppedpk);
         }
 
         static public function dropTable($tableName){
