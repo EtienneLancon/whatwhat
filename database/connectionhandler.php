@@ -19,7 +19,7 @@
 
         static public function getTableExistsRequest();
 
-        static public function alterTable($tableName, $addedColumns, $droppedColumns, $modifiedColumns, $droppedpk);
+        static public function alterTable($tableName, $addedColumns, $droppedColumns, $modifiedColumns, $droppedpk, $pks);
 
         static public function getDefaultPort();
     }

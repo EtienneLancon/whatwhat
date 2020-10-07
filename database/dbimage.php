@@ -73,7 +73,7 @@
 
             $previousTable = null;
             $fields = array();
-            //var_dump($columnList);
+            
             foreach($columnList as $column){
                 if($previousTable != $column->wwtable){
                     if(!is_null($previousTable)){
@@ -92,8 +92,7 @@
                 $fields[$column->wwfield]['autoincrement'] = $column->wwautoincrement;
                 $fields[$column->wwfield]['default'] = wwnull($column->wwdefault);
             }
-            if(is_null($previousTable)){
-                echo $previousTable."\n";
+            if(!is_null($previousTable)){
                 $this->tableList[] = $previousTable;
                 $indexes = $this->getIndexes($previousTable);
                 $f = new StructureFile($this->directory.StructureFile::$tablesDirectory.$previousTable.'.php');

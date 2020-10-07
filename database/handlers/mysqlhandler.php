@@ -64,20 +64,8 @@
                     and t.TABLE_SCHEMA = :schema";
         }
 
-        static public function alterTable($tableName, $addedColumns, $droppedColumns, $modifiedColumns, $droppedpk){
+        static public function alterTable($tableName, $addedColumns, $droppedColumns, $modifiedColumns, $droppedpk, $pks){
             $cmd = '';
-            
-            if(!empty($addedColumns)){
-                $cmd .= 'ALTER TABLE '.$tableName."\n\tADD ";
-                $first = true;
-                foreach($addedColumns as $addedColumn){
-                    if($first){
-                        $cmd .= $addedColumn;
-                        $first = false;
-                    }else $cmd .= "\n\t, ".$addedColumn;
-                }
-                $cmd .= ";\n\n";
-            }
 
             if(!empty($droppedColumns)){
                 $cmd .= 'ALTER TABLE '.$tableName;
@@ -89,16 +77,25 @@
 
             if(!empty($modifiedColumns)){
                 $cmd .= 'ALTER TABLE '.$tableName;
-                $first = true;
-                foreach($modifiedColumns as $data => $modifiedColumn){
-                    $cmd .= "\n\tMODIFY ".$modifiedColumn.(($first) ? "" : ",");
-                    $first = false;
+                foreach($modifiedColumns as $modifiedColumn){
+                    $cmd .= "\n\tMODIFY COLUMN ".$modifiedColumn.",";
                 }
-                $cmd .= ";\n\n";
+                $cmd = substr($cmd, 0, strlen($cmd)-1).";\n\n";
             }
 
             if($droppedpk){
                 $cmd .= "ALTER TABLE ".$tableName." DROP PRIMARY KEY;\n\n";
+            }
+            
+            if(!empty($addedColumns)){
+                $cmd .= 'ALTER TABLE '.$tableName;
+                foreach($addedColumns as $addedColumn){
+                    $cmd .= "\n\tADD ".$addedColumn;
+                    //RECUPERER LE NOM DU CHAMP POUR POUVOIR FAIRE UEN RECHERCHE ET INSERER PRIMARY KEY AVEC ARRAY SEARCH
+                    if(array_search($addedColumn, $pks) !== false) $cmd .= ' PRIMARY KEY';
+                    $cmd .= ",";
+                }
+                $cmd = substr($cmd, 0, strlen($cmd)-1).";\n\n";
             }
 
             return $cmd;

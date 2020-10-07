@@ -40,7 +40,6 @@
             $this->setSourceDb($this->targetDb->getdbTag());
             if(is_null($dir)) $dir = Directory::getLatestSaveDir(self::$saveDirectory
                                             , $this->sourceDb->getRequest()->getdbName());
-
             
             $tablesaves = Directory::scandir($dir."/wwtables/");
             $viewsaves = Directory::scandir($dir."/wwviews/");
@@ -67,7 +66,7 @@
             
             $this->saveOldStructure();
             $this->createNewStructureCmd();
-            $this->writeMigration();
+            $this->makeMigration();
         }
 
         private function createNewStructureCmd(){

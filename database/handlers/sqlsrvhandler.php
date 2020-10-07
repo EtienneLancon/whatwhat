@@ -67,7 +67,7 @@
                     where t.TABLE_NAME  = :table";
         }
 
-        static public function alterTable($tableName, $addedColumns, $droppedColumns, $modifiedColumns, $droppedpk){
+        static public function alterTable($tableName, $addedColumns, $droppedColumns, $modifiedColumns, $droppedpk, $pks){
             
         }
 
