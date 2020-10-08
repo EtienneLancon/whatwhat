@@ -67,6 +67,10 @@
         static public function alterTable($tableName, $addedColumns, $droppedColumns, $modifiedColumns, $droppedpk, $pks){
             $cmd = '';
 
+            // if($droppedpk){
+            //     $cmd .= "ALTER TABLE ".$tableName." DROP PRIMARY KEY;\n\n";
+            // }
+
             if(!empty($droppedColumns)){
                 $cmd .= 'ALTER TABLE '.$tableName;
                 foreach($droppedColumns as $droppedColumn){
@@ -77,22 +81,27 @@
 
             if(!empty($modifiedColumns)){
                 $cmd .= 'ALTER TABLE '.$tableName;
-                foreach($modifiedColumns as $modifiedColumn){
-                    $cmd .= "\n\tMODIFY COLUMN ".$modifiedColumn.",";
+                $count = count($modifiedColumns);
+                $i = 1;
+                foreach($modifiedColumns as $name => $modifiedColumn){
+                    $cmd .= "\n\tMODIFY COLUMN ".$modifiedColumn;
+                    if(array_search($name, $pks) !== false) $cmd .= ' PRIMARY KEY,';
+                    elseif($name == $droppedpk){
+                        $cmd .= ";\n\nALTER TABLE ".$tableName." DROP PRIMARY KEY";
+                        if($i < $count) $cmd .= ";\n\nALTER TABLE ".$tableName;
+                        else $cmd .= '-'; //add a character to be deleted
+                    }
+                    else $cmd .= ',';
+                    $i++;
                 }
                 $cmd = substr($cmd, 0, strlen($cmd)-1).";\n\n";
-            }
-
-            if($droppedpk){
-                $cmd .= "ALTER TABLE ".$tableName." DROP PRIMARY KEY;\n\n";
             }
             
             if(!empty($addedColumns)){
                 $cmd .= 'ALTER TABLE '.$tableName;
-                foreach($addedColumns as $addedColumn){
+                foreach($addedColumns as $name => $addedColumn){
                     $cmd .= "\n\tADD ".$addedColumn;
-                    //RECUPERER LE NOM DU CHAMP POUR POUVOIR FAIRE UEN RECHERCHE ET INSERER PRIMARY KEY AVEC ARRAY SEARCH
-                    if(array_search($addedColumn, $pks) !== false) $cmd .= ' PRIMARY KEY';
+                    if(array_search($name, $pks) !== false) $cmd .= ' PRIMARY KEY';
                     $cmd .= ",";
                 }
                 $cmd = substr($cmd, 0, strlen($cmd)-1).";\n\n";

@@ -66,6 +66,7 @@
             
             $this->saveOldStructure();
             $this->createNewStructureCmd();
+            $this->writeMigration();
             $this->makeMigration();
         }
 

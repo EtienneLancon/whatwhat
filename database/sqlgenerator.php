@@ -35,7 +35,7 @@
             $droppedColumns = array();
             $addedColumns = array();
             $modifiedColumns = array();
-            $droppedpk = false;
+            $droppedpk = '';
             $pks = array();
             
             foreach($oldModel['fields'] as $oldFieldName => &$oldField){
@@ -54,9 +54,16 @@
                                 }
                             }
 
-                            if($newField['primary'] == false && $oldField['primary'] == true) $droppedpk = true;
+                            if(array_key_exists('primary', $newField)
+                                && $newField['primary'] == false
+                                && array_key_exists('primary', $oldField)
+                                && $oldField['primary'] == true) $droppedpk = $newFieldName;
                             
-                            if(!empty($modifiedField)) $modifiedColumns[] = self::writeColumn($newFieldName, $modifiedField);
+                            if(!empty($modifiedField)){
+                                if(array_key_exists('primary', $modifiedField) !== false
+                                    && $modifiedField['primary'] === true) $pks[] = $newFieldName;
+                                $modifiedColumns[$newFieldName] = self::writeColumn($newFieldName, $modifiedField);
+                            }
                         }
                     }
                     if(!$oldField['foundInNew']){     //only in old table.
@@ -68,7 +75,7 @@
 
             foreach($onlyInNewModel['fields'] as $field => $desc){     //only in new table.
                 if(array_key_exists('primary', $desc) !== false && $desc['primary'] === true) $pks[] = $field;
-                $addedColumns[] = self::writeColumn($field, $desc);
+                $addedColumns[$field] = self::writeColumn($field, $desc);
             }
             
             return $dbtype->alterTable($newModel['table'], $addedColumns, $droppedColumns, $modifiedColumns, $droppedpk, $pks);
