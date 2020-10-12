@@ -30,7 +30,7 @@
             return $cmd;
         }
 
-        static public function alterTable($dbtype, $newModel, $oldModel){   
+        static public function alterTable($dbtype, $newModel, $oldModel){   //DO INDEXES
             $onlyInNewModel = $newModel;
             $droppedColumns = array();
             $addedColumns = array();
@@ -60,8 +60,8 @@
                                 && $oldField['primary'] == true) $droppedpk = $newFieldName;
                             
                             if(!empty($modifiedField)){
-                                if(array_key_exists('primary', $modifiedField) !== false
-                                    && $modifiedField['primary'] === true) $pks[] = $newFieldName;
+                                if((array_key_exists('primary', $modifiedField) !== false && $modifiedField['primary'] === true) 
+                                && (array_key_exists('primary', $oldField) === false || $oldField['primary'] === false)) $pks[] = $newFieldName;
                                 $modifiedColumns[$newFieldName] = self::writeColumn($newFieldName, $modifiedField);
                             }
                         }

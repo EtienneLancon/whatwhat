@@ -12,8 +12,10 @@
         private $cmd = '';
 
         public function migrate(){
-            $this->prepare();
-            $this->makeMigration();
+            $this->pullNewStructure();
+            $this->saveOldStructure();
+            $this->createNewStructureCmd(true);
+            $this->writeMigration();
         }
 
         public function prepare(){
@@ -65,12 +67,11 @@
             }
             
             $this->saveOldStructure();
-            $this->createNewStructureCmd();
+            $this->createNewStructureCmd(true);
             $this->writeMigration();
-            $this->makeMigration();
         }
 
-        private function createNewStructureCmd(){
+        private function createNewStructureCmd($execute = false){
             $oldTables = $this->targetDb->getTableList();
             $newTables = $this->sourceDb->getTableList();
             
@@ -78,26 +79,32 @@
                 $newModelFile = new StructureFile(StructureFile::$tablesDirectory.$newTable.'.php');
                 $newModel = $newModelFile->get();
                 if(array_search($newTable, $oldTables) === false){
-                    $this->cmd .= SqlGenerator::createTable($newModel);
+                    $cmd = SqlGenerator::createTable($newModel);
                 }else{
                     $oldModelFile = new StructureFile(self::$saveDirectory.$this->targetDb->getdbName()
                                         .$this->targetDb->getDate().'/'.StructureFile::$tablesDirectory.$newTable.'.php');
                     $oldModel = $oldModelFile->get();
-                    $this->cmd .= SqlGenerator::alterTable($this->targetDb->getRequest()->getdbType()
-                                                            , $newModel, $oldModel);
+                    $cmd = SqlGenerator::alterTable($this->targetDb->getRequest()->getdbType()
+                                                            , $newModel, $oldModel); //DO INDEXES
                 }
+                $this->cmd .= $cmd;
+                if($execute && !empty($cmd)) $this->targetDbExec($cmd);
             }
 
             foreach($oldTables as $oldTable){
                 if(array_search($oldTable, $newTables) === false){
-                    $this->cmd .= SqlGenerator::dropTable($oldTable);
+                    $cmd = SqlGenerator::dropTable($oldTable);
+                    $this->cmd .= $cmd;
+                    if($execute) $this->targetDbExec($cmd);
                 }
             }
             
             foreach($this->sourceDb->getViewList() as $newView){
                 $f = new StructureFile(StructureFile::$viewsDirectory.$newView.'.php');
                 $newModel = $f->get();
-                $this->cmd .= SqlGenerator::createView($newModel);
+                $cmd = SqlGenerator::createView($newModel);
+                $this->cmd .= $cmd;
+                if($execute) $this->targetDbExec($cmd);
             }
         }
 
@@ -115,7 +122,11 @@
         }
 
         public function makeMigration(){
-            $this->targetDb->getRequest()->setCmd($this->cmd);
+            $this->targetDbExec($this->cmd);
+        }
+
+        private function targetDbExec($cmd){
+            $this->targetDb->getRequest()->setCmd($cmd);
             $this->targetDb->getRequest()->bindexec();
         }
 
