@@ -81,6 +81,39 @@
             return $dbtype->alterTable($newModel['table'], $addedColumns, $droppedColumns, $modifiedColumns, $droppedpk, $pks);
         }
 
+        static public function diffIndexes($newModel, $oldModel){
+            $cmd = '';
+            foreach($newModel['indexes'] as $indexname => $indexfields){
+                if(array_key_exists($indexname, $oldModel['indexes']) === false){
+                    $cmd .= "CREATE INDEX ".$indexname."\nON ".$newModel['table']." (";
+                    foreach($indexfields as $field){
+                        $cmd .= $field.",";
+                    }
+                    $cmd = substr($cmd, 0, strlen($cmd)-1).");\n\n";
+                }else{
+                    $tmp = '';
+                    $modify = false;
+                    foreach($indexfields as $field){
+                        $tmp .= $field.",";
+                        if(array_key_exists($field, $oldModel['indexes'][$indexname]) === false){
+                            $modify = true;
+                        }
+                    }
+                    if($modify){
+                        $cmd .= "DELETE INDEX ".$indexname.";\n\n";
+                        $cmd .= "CREATE INDEX ".$indexname."\nON ".$newModel['table']." (".$tmp;
+                        $cmd = substr($cmd, 0, strlen($cmd)-1).");\n\n";
+                    }
+                }
+            }
+            foreach($oldModel['indexes'] as $indexname => $indexfields){
+                if(array_key_exists($indexname, $newModel['indexes']) === false){
+                    $cmd .= "DELETE INDEX ".$indexname.";\n\n";
+                }
+            }
+            return $cmd;
+        }
+
         static public function dropTable($tableName){
             return "DROP TABLE ".$tableName.";\n\n";
         }

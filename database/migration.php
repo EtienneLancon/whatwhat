@@ -80,15 +80,20 @@
                 $newModel = $newModelFile->get();
                 if(array_search($newTable, $oldTables) === false){
                     $cmd = SqlGenerator::createTable($newModel);
+                    $this->cmd .= $cmd;
+                    if($execute && !empty($cmd)) $this->targetDbExec($cmd);
                 }else{
                     $oldModelFile = new StructureFile(self::$saveDirectory.$this->targetDb->getdbName()
                                         .$this->targetDb->getDate().'/'.StructureFile::$tablesDirectory.$newTable.'.php');
                     $oldModel = $oldModelFile->get();
                     $cmd = SqlGenerator::alterTable($this->targetDb->getRequest()->getdbType()
                                                             , $newModel, $oldModel); //DO INDEXES
+                    $this->cmd .= $cmd;
+                    if($execute && !empty($cmd)) $this->targetDbExec($cmd);
+
+                    $cmd = SqlGenerator::diffIndexes($newModel, $oldModel);
+                    $this->cmd .= $cmd;
                 }
-                $this->cmd .= $cmd;
-                if($execute && !empty($cmd)) $this->targetDbExec($cmd);
             }
 
             foreach($oldTables as $oldTable){
