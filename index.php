@@ -6,5 +6,5 @@
 
    $ww = new Migration();
    $ww->setSourceDb('dev:djBook');
-   $ww->setTargetDb('dev:eni');
+   $ww->setTargetDb('dev:test');
    $ww->migrate();

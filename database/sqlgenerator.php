@@ -30,7 +30,7 @@
             return $cmd;
         }
 
-        static public function alterTable($dbtype, $newModel, $oldModel){   //DO INDEXES
+        static public function alterTable($dbtype, $newModel, $oldModel){
             $onlyInNewModel = $newModel;
             $droppedColumns = array();
             $addedColumns = array();
@@ -42,7 +42,7 @@
                 $oldField['foundInNew'] = false;
                 if($oldModel['table'] == $onlyInNewModel['table']){
                     foreach($onlyInNewModel['fields'] as $newFieldName => &$newField){
-                        if($newFieldName == $oldFieldName){ //field in both old in new table, look for changes
+                        if($newFieldName == $oldFieldName){ //field in both old and new table, look for changes
                             $oldField['foundInNew'] = true;
                             unset($onlyInNewModel['fields'][$oldFieldName]);
                             
@@ -83,32 +83,37 @@
 
         static public function diffIndexes($newModel, $oldModel){
             $cmd = '';
-            foreach($newModel['indexes'] as $indexname => $indexfields){
-                if(array_key_exists($indexname, $oldModel['indexes']) === false){
-                    $cmd .= "CREATE INDEX ".$indexname."\nON ".$newModel['table']." (";
-                    foreach($indexfields as $field){
-                        $cmd .= $field.",";
-                    }
-                    $cmd = substr($cmd, 0, strlen($cmd)-1).");\n\n";
-                }else{
-                    $tmp = '';
-                    $modify = false;
-                    foreach($indexfields as $field){
-                        $tmp .= $field.",";
-                        if(array_key_exists($field, $oldModel['indexes'][$indexname]) === false){
-                            $modify = true;
+            if(array_key_exists('indexes', $newModel) !== false){
+                foreach($newModel['indexes'] as $indexname => $indexfields){
+                    if(array_key_exists('indexes', $oldModel) === false
+                        || array_key_exists($indexname, $oldModel['indexes']) === false){
+                        $cmd .= "CREATE INDEX ".$indexname."\nON ".$newModel['table']." (";
+                        foreach($indexfields as $field){
+                            $cmd .= $field.",";
                         }
-                    }
-                    if($modify){
-                        $cmd .= "DELETE INDEX ".$indexname.";\n\n";
-                        $cmd .= "CREATE INDEX ".$indexname."\nON ".$newModel['table']." (".$tmp;
                         $cmd = substr($cmd, 0, strlen($cmd)-1).");\n\n";
+                    }else{
+                        $tmp = '';
+                        $modify = false;
+                        foreach($indexfields as $field){
+                            $tmp .= $field.",";
+                            if(array_key_exists($field, $oldModel['indexes'][$indexname]) === false){
+                                $modify = true;
+                            }
+                        }
+                        if($modify){
+                            $cmd .= "DROP INDEX ".$indexname." ON ".$newModel['table'].";\n\n";
+                            $cmd .= "CREATE INDEX ".$indexname."\nON ".$newModel['table']." (".$tmp;
+                            $cmd = substr($cmd, 0, strlen($cmd)-1).");\n\n";
+                        }
                     }
                 }
             }
-            foreach($oldModel['indexes'] as $indexname => $indexfields){
-                if(array_key_exists($indexname, $newModel['indexes']) === false){
-                    $cmd .= "DELETE INDEX ".$indexname.";\n\n";
+            if(array_key_exists('indexes', $oldModel) !== false){
+                foreach($oldModel['indexes'] as $indexname => $indexfields){
+                    if(array_key_exists($indexname, $newModel['indexes']) === false){
+                        $cmd .= "DROP INDEX ".$indexname." ON ".$newModel['table'].";\n\n";
+                    }
                 }
             }
             return $cmd;

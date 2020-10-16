@@ -92,6 +92,7 @@
                     if($execute && !empty($cmd)) $this->targetDbExec($cmd);
 
                     $cmd = SqlGenerator::diffIndexes($newModel, $oldModel);
+                    if($execute && !empty($cmd)) $this->targetDbExec($cmd);
                     $this->cmd .= $cmd;
                 }
             }
