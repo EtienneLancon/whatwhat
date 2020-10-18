@@ -42,7 +42,7 @@
 
         public function tableExists($table){
             $this->request->setCmd($this->request->getdbType()->getTableExistsRequest());
-            $this->request->addBinds(array('table' => $table, 'schema' => $this->request->getEnv()));
+            $this->request->addBinds(array('table' => $table, 'schema' => $this->getdbName()));
             if(empty($this->request->getResults())) return false;
             else return true;
         }

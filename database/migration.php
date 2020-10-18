@@ -10,11 +10,13 @@
         private $sourceDb;
         private $targetDb;
         private $cmd = '';
+        private $dumpedTables;
 
         public function migrate(){
             $this->pullNewStructure();
             $this->saveOldStructure();
             $this->createNewStructureCmd(true);
+            $this->dumpTables();
             $this->writeMigration();
         }
 
@@ -33,7 +35,7 @@
             }
             $this->cmd = file_get_contents($file);
             
-            $this->makeMigration();
+            $this->targetDbExec($this->cmd);
         }
 
         public function reverse($dir = null){
@@ -114,6 +116,61 @@
             }
         }
 
+        public function dumpTables(){
+            if(!empty($this->dumpedTables)){
+                foreach($this->dumpedTables as $dumped){
+                    if($this->targetDb->tableExists($dumped)){
+                        $this->targetDbExec("delete from ".$dumped);
+                        $this->dumpData($dumped);
+                    }else echo ln()."Table ".$dumped." not found in target database.";
+                }
+            }else{
+                echo ln()."No dump ordered.";
+            }
+        }
+
+        private function dumpData($table){
+            $columndataList = $this->targetDb->collectColumnList($table);
+            $fieldsstr = '';
+            $fields = array();
+            foreach($columndataList as $columndata){
+                if(!$columndata->wwautoincrement){
+                    $fieldsstr .= $columndata->wwfield.",";
+                    $fields[] = $columndata->wwfield;
+                }
+            }
+            $fieldsstr = substr($fieldsstr, 0, strlen($fieldsstr)-1);
+            $requestheader = "INSERT INTO __table\n(".$fieldsstr.")\nVALUES";
+            $this->targetDb->getRequest()->addBinds(array('__table' => $table));
+            
+            $this->sourceDb->getRequest()->setCmd('select count(*) as nbRows from '.$table);
+            $nbRows = $this->sourceDb->getRequest()->getResults()[0]->nbRows;
+
+            for($i = 0; $i < $nbRows; $i += 1000){
+                $cmd = "SELECT ".$fieldsstr." FROM ".$table." LIMIT 1000 OFFSET ".$i;
+                $this->sourceDbExec($cmd);
+                $requestbody = '';
+                $j = 0;
+                while(($row = $this->sourceDb->getRequest()->getStmt()->fetchObject()) !== false){
+                    $tmp = "\n(";
+                    $binds = array();
+                    foreach($fields as $field){
+                        $name = "param".strval($j);
+                        $tmp .= ":".$name.",";
+                        $binds[$name] = $row->$field;
+                        $j++;
+                    }
+                    $this->targetDb->getRequest()->addBinds($binds);
+                    $tmp = substr($tmp, 0, strlen($tmp)-1);
+                    $requestbody .= $tmp."),";
+                }
+                $requestbody = substr($requestbody, 0, strlen($requestbody)-1);
+                $request = $requestheader.$requestbody;
+                $this->targetDb->getRequest()->setCmd($request);
+                $this->targetDb->getRequest()->bindexec();
+            }            
+        }
+
         private function writeMigration(){
             Directory::isdir(self::$migrationDirectory);
             $migFile = new StructureFile(self::$migrationDirectory
@@ -121,27 +178,22 @@
             $migFile->write($this->cmd);
         }
 
-        public function fileMigration($file){
-            File::checkFile($file);
-            $cmd = file_get_contents($file);
-            $this->cmdMigration($cmd);
-        }
-
-        public function makeMigration(){
-            $this->targetDbExec($this->cmd);
-        }
-
         private function targetDbExec($cmd){
             $this->targetDb->getRequest()->setCmd($cmd);
             $this->targetDb->getRequest()->bindexec();
         }
 
-        public function pullNewStructure(){
+        private function sourceDbExec($cmd){
+            $this->sourceDb->getRequest()->setCmd($cmd);
+            $this->sourceDb->getRequest()->bindexec();
+        }
+
+        private function pullNewStructure(){
             $this->sourceDb->createModels();
             $this->sourceDb->createViews();
         }
 
-        public function saveOldStructure(){
+        private function saveOldStructure(){
             $this->targetDb->createModels();
             $this->targetDb->createViews();
         }
@@ -152,5 +204,10 @@
 
         public function setTargetDb($dbtag){            
             $this->targetDb = new DbImage($dbtag, 'target');
+        }
+
+        public function setDumpedTables($dumpedTables){
+            paramcheck($dumpedTables, 'array');
+            $this->dumpedTables = $dumpedTables;
         }
     }

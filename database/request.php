@@ -31,6 +31,7 @@
             }
             $this->stmt->execute();
             $this->bindCount = 0;
+            $this->binds = array();
         }
         
         protected function setStmt(){
@@ -69,7 +70,6 @@
             while(($row = $this->stmt->fetchObject()) !== false){
                 array_push($return, $row);
             }
-            $this->binds = array();
             return $return;
         }
 
@@ -105,5 +105,9 @@
 
         public function moreCmd($addedCmd){
             $this->cmd .= $addedCmd;
+        }
+
+        public function getStmt(){
+            return $this->stmt;
         }
     }

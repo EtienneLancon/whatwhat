@@ -7,4 +7,5 @@
    $ww = new Migration();
    $ww->setSourceDb('dev:djBook');
    $ww->setTargetDb('dev:test');
+   $ww->setDumpedTables(array('django_migrations', 'django_session'));
    $ww->migrate();

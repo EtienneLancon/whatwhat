@@ -16,7 +16,7 @@
                     CASE WHEN EXTRA = 'auto_increment' THEN 1 ELSE 0 END as wwautoincrement,
                     COLUMN_DEFAULT as wwdefault
                     FROM INFORMATION_SCHEMA.COLUMNS C
-                    LEFT JOIN INFORMATION_SCHEMA.TABLES T on C.TABLE_NAME = T.TABLE_NAME
+                    LEFT JOIN INFORMATION_SCHEMA.TABLES T on (C.TABLE_NAME = T.TABLE_NAME AND C.TABLE_SCHEMA = T.TABLE_SCHEMA)
                     WHERE C.TABLE_SCHEMA = :dbName
                     AND TABLE_COMMENT <> 'VIEW'
                     GROUP BY wwtable, wwfield";
@@ -30,7 +30,7 @@
                     CASE WHEN EXTRA = 'auto_increment' THEN 1 ELSE 0 END as wwautoincrement,
                     COLUMN_DEFAULT as wwdefault
                     FROM INFORMATION_SCHEMA.COLUMNS C
-                    LEFT JOIN INFORMATION_SCHEMA.TABLES T on C.TABLE_NAME = T.TABLE_NAME
+                    LEFT JOIN INFORMATION_SCHEMA.TABLES T on (C.TABLE_NAME = T.TABLE_NAME AND C.TABLE_SCHEMA = T.TABLE_SCHEMA)
                     where C.TABLE_SCHEMA = :dbName
                     and C.TABLE_NAME = :table
                     and TABLE_COMMENT <> 'VIEW'";
@@ -89,7 +89,7 @@
                     elseif($name == $droppedpk){
                         $cmd .= ";\n\nALTER TABLE ".$tableName." DROP PRIMARY KEY";
                         if($i < $count) $cmd .= ";\n\nALTER TABLE ".$tableName;
-                        else $cmd .= '-'; //add a character to be deleted
+                        else $cmd .= '§'; //add a character to be deleted
                     }
                     else $cmd .= ',';
                     $i++;
